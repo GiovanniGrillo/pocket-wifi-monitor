@@ -26,8 +26,10 @@ from __future__ import annotations
 import argparse
 import json
 import socket
+import statistics
 import subprocess
 import sys
+import threading
 import time
 import urllib.request
 from datetime import datetime, timezone
@@ -169,6 +171,88 @@ CURSOR = DATA_DIR / "outbox.cursor"
 BATCH = 400
 
 
+DOWN_URL = "https://speed.cloudflare.com/__down?bytes={n}"
+
+
+def _lat_once(timeout_s: int = 8):
+    """Round-trip time (ms) of a tiny HTTP request, or None."""
+    t0 = time.monotonic()
+    try:
+        with urllib.request.urlopen(LAT_URL, timeout=timeout_s) as r:
+            r.read(16)
+        return round((time.monotonic() - t0) * 1000, 1)
+    except Exception:  # noqa: BLE001
+        return None
+
+
+def _dl_bytes(url: str, deadline: float) -> int:
+    """Download from url until EOF or the deadline; return bytes received."""
+    got = 0
+    try:
+        # A UA header is required: Cloudflare's speed endpoint 403s the default.
+        req = urllib.request.Request(url, headers={"User-Agent": "pocket-wifi-monitor/1.0"})
+        with urllib.request.urlopen(req, timeout=15) as r:
+            while time.monotonic() < deadline:
+                chunk = r.read(65536)
+                if not chunk:
+                    break
+                got += len(chunk)
+    except Exception:  # noqa: BLE001
+        pass
+    return got
+
+
+def run_stress(secs: int, streams: int, budget_mb: int) -> dict:
+    """Measure the phone's own mobile link: aggregate download throughput over
+    `streams` parallel flows for ~`secs`, plus latency idle vs under load
+    (bufferbloat). Hard-capped at `budget_mb` of data."""
+    chunk = 2 * 1024 * 1024   # smaller chunk => the budget cap overshoots less
+    budget = budget_mb * 1024 * 1024
+    total = [0]
+    lock = threading.Lock()
+
+    idle = [m for m in (_lat_once() for _ in range(3)) if m is not None]
+    lat_idle = round(statistics.median(idle), 1) if idle else None
+
+    deadline = time.monotonic() + secs
+    load = []
+
+    def dlworker():
+        while time.monotonic() < deadline:
+            with lock:
+                if total[0] >= budget:
+                    return
+            b = _dl_bytes(DOWN_URL.format(n=chunk), deadline)
+            with lock:
+                total[0] += b
+            if b == 0:
+                return
+
+    def latworker():
+        while time.monotonic() < deadline:
+            m = _lat_once()
+            if m is not None:
+                load.append(m)
+            time.sleep(1)
+
+    start = time.monotonic()
+    ts = [threading.Thread(target=dlworker, daemon=True) for _ in range(streams)]
+    lt = threading.Thread(target=latworker, daemon=True)
+    for t in ts:
+        t.start()
+    lt.start()
+    for t in ts:
+        t.join(secs + 30)
+    elapsed = max(0.1, time.monotonic() - start)
+    return {
+        "dl_mbps": round(total[0] * 8 / elapsed / 1e6, 2),
+        "data_mb": round(total[0] / 1024 / 1024, 1),
+        "lat_idle_ms": lat_idle,
+        "lat_load_ms": round(statistics.median(load), 1) if load else None,
+        "streams": streams, "secs": secs,
+    }
+
+
 def read_battery() -> dict:
     """Battery % / temperature / health via Termux:API (best-effort)."""
     d = _run_json(["termux-battery-status"]) or {}
@@ -231,7 +315,7 @@ def flush_outbox(collector: str, token: str):
     if off > size:          # file rotated/truncated -> restart from top
         off = 0
     sent = 0
-    stop = False
+    last_resp = None
     with OUTBOX.open("rb") as f:
         f.seek(off)
         while True:
@@ -253,8 +337,8 @@ def flush_outbox(collector: str, token: str):
                 ok, resp = post(collector, token, batch)
                 if not ok:
                     break      # leave cursor put; retry next cycle
-                if isinstance(resp, dict) and resp.get("stop"):
-                    stop = True
+                if isinstance(resp, dict):
+                    last_resp = resp
             off += consumed
             try:
                 CURSOR.write_text(str(off))
@@ -263,7 +347,7 @@ def flush_outbox(collector: str, token: str):
             sent += len(batch)
             if consumed == 0 or f.tell() >= size:
                 break
-    return sent, off >= size, max(0, size - off), stop
+    return sent, off >= size, max(0, size - off), last_resp
 
 
 def main():
@@ -293,6 +377,7 @@ def main():
           f"stop remoto via collector.")
 
     over = 0
+    last_stress_id = None
     while True:
         sample = {"timestamp": datetime.now(timezone.utc).isoformat(), "source": args.name,
                   "sim_status": "ready"}
@@ -304,7 +389,9 @@ def main():
 
         # Deliver this sample plus anything missed since last time (PC off,
         # reboot, ...): the file + byte cursor make it survive restarts.
-        sent, caught_up, backlog, stop_remote = flush_outbox(args.collector, args.token)
+        sent, caught_up, backlog, resp = flush_outbox(args.collector, args.token)
+        stop_remote = bool(resp and resp.get("stop"))
+        stress_cmd = resp.get("stress") if isinstance(resp, dict) else None
 
         temp = sample.get("batt_temp")
         over = over + 1 if isinstance(temp, (int, float)) and temp >= args.max_temp else 0
@@ -332,6 +419,24 @@ def main():
             flush_outbox(args.collector, args.token)   # prova a consegnare l'avviso
             print(f">> STOP: {reason}. Agente terminato.")
             return 0
+
+        # Remote-requested stress test (one-shot): run it on the phone's own
+        # mobile link, then report the result back through the outbox.
+        if isinstance(stress_cmd, dict) and stress_cmd.get("id") != last_stress_id:
+            last_stress_id = stress_cmd.get("id")
+            print(f">> STRESS TEST: {stress_cmd['streams']} flussi, {stress_cmd['secs']}s, "
+                  f"max {stress_cmd['budget_mb']} MB ...")
+            res = run_stress(stress_cmd["secs"], stress_cmd["streams"], stress_cmd["budget_mb"])
+            result = {"timestamp": datetime.now(timezone.utc).isoformat(), "source": args.name,
+                      "kind": "stress_result", "stress_id": stress_cmd.get("id")}
+            result.update(res)
+            for k in ("sig_band", "sig_rsrp", "sig_quality"):
+                if sample.get(k) not in (None, ""):
+                    result[k] = sample[k]
+            append_outbox(result)
+            flush_outbox(args.collector, args.token)
+            print(f">> risultato: {res['dl_mbps']} Mbps | latenza {res['lat_idle_ms']}→"
+                  f"{res['lat_load_ms']} ms | dati {res['data_mb']} MB")
 
         if args.once:
             return 0
