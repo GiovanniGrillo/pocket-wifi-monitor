@@ -42,7 +42,10 @@ _lock = threading.Lock()
 _latest = {"ts": None, "fields": {}, "source": ""}
 
 CONTROL_FILE = DATA_DIR / "control.json"
-_control = {"stop": False}  # remote kill-switch; the phone reads it on each POST
+# Remote control the phone reads on each POST: a kill-switch and an optional
+# one-shot stress-test command. `stress` is null, or {id, budget_mb, streams, secs}.
+_control = {"stop": False, "stress": None}
+_last_stress = {}  # most recent stress-test result reported by the phone
 
 
 def _load_control():
@@ -271,6 +274,7 @@ class Handler(BaseHTTPRequestHandler):
         return bool(self.client_address) and self.client_address[0] in ("127.0.0.1", "::1")
 
     def do_POST(self):
+        global _last_stress
         if self.path == "/control":
             if not self._authorized():
                 self._send(403, b"bad token", "text/plain")
@@ -284,8 +288,20 @@ class Handler(BaseHTTPRequestHandler):
             with _lock:
                 if isinstance(body, dict) and "stop" in body:
                     _control["stop"] = bool(body["stop"])
-                    _save_control()
+                if isinstance(body, dict) and "stress" in body:
+                    req = body["stress"]
+                    if isinstance(req, dict):
+                        _control["stress"] = {
+                            "id": int(datetime.now(timezone.utc).timestamp()),
+                            "budget_mb": max(1, min(int(req.get("budget_mb", 50)), 1000)),
+                            "streams": max(1, min(int(req.get("streams", 3)), 16)),
+                            "secs": max(5, min(int(req.get("secs", 15)), 120)),
+                        }
+                    else:
+                        _control["stress"] = None  # cancel a pending test
+                _save_control()
                 state = dict(_control)
+                state["last_stress"] = _last_stress
             self._send(200, json.dumps(state).encode(), "application/json")
             return
         if self.path != "/ingest":
@@ -311,6 +327,12 @@ class Handler(BaseHTTPRequestHandler):
                 for it in items:
                     it.setdefault("timestamp", datetime.now(timezone.utc).isoformat())
                     _append(it)
+                    if it.get("kind") == "stress_result":
+                        _last_stress = it
+                        pend = _control.get("stress")
+                        if pend and it.get("stress_id") == pend.get("id"):
+                            _control["stress"] = None  # one-shot: command fulfilled
+                            _save_control()
             except OSError as e:
                 self._send(500, f"store error: {e}".encode(), "text/plain")
                 return
@@ -318,9 +340,9 @@ class Handler(BaseHTTPRequestHandler):
             _latest["ts"] = _parse_ts(last.get("timestamp")) or datetime.now(timezone.utc)
             _latest["fields"] = last
             _latest["source"] = str(last.get("source", "phone"))
-            stop = bool(_control.get("stop"))
-        self._send(200, json.dumps({"ok": True, "n": len(items), "stop": stop}).encode(),
-                   "application/json")
+            resp = {"ok": True, "n": len(items), "stop": bool(_control.get("stop")),
+                    "stress": _control.get("stress")}
+        self._send(200, json.dumps(resp).encode(), "application/json")
 
     def do_GET(self):
         route = urlparse(self.path)
@@ -356,7 +378,9 @@ class Handler(BaseHTTPRequestHandler):
                 self._send(403, b"bad token", "text/plain")
                 return
             with _lock:
-                self._send(200, json.dumps(dict(_control)).encode(), "application/json")
+                state = dict(_control)
+                state["last_stress"] = _last_stress
+            self._send(200, json.dumps(state).encode(), "application/json")
             return
         if self.path == "/data":
             if not self._authorized():
