@@ -246,6 +246,33 @@ def _history(days: int) -> dict:
         else:
             h["trend"] = "Andamento: segnale sostanzialmente stabile nel periodo."
 
+    # Breakdown by hour-of-day (LOCAL time) — reveals peak-hour congestion,
+    # e.g. whether evenings (streaming time) are the weak spot.
+    by_hour = {h24: {"rsrp": [], "okq": 0, "up": 0, "n": 0} for h24 in range(24)}
+    for dt, d in samples:
+        b = by_hour[dt.astimezone().hour]
+        b["n"] += 1
+        if str(d.get("sig_rsrp", "")).lstrip("-").isdigit():
+            b["rsrp"].append(int(d["sig_rsrp"]))
+        if d.get("sig_quality") in ("fair", "good", "excellent"):
+            b["okq"] += 1
+        if d.get("http_ok") is True:
+            b["up"] += 1
+    h["by_hour"] = [{
+        "hour": hh, "n": b["n"],
+        "rsrp_median": round(statistics.median(b["rsrp"])) if b["rsrp"] else None,
+        "ok_quality_pct": round(100 * b["okq"] / b["n"]) if b["n"] else None,
+        "uplink_ok_pct": round(100 * b["up"] / b["n"]) if b["n"] else None,
+    } for hh, b in sorted(by_hour.items())]
+
+    # Rough data-usage estimate for the window: stress tests (the big, known
+    # cost) + a small per-sample overhead for the continuous monitoring.
+    stress_mb = sum(float(d["data_mb"]) for _, d in samples
+                    if d.get("kind") == "stress_result" and isinstance(d.get("data_mb"), (int, float)))
+    agent_mb = len(samples) * 0.003   # ~3 KB per cycle (POST + 204 check), estimate
+    h["data_stress_mb"] = round(stress_mb, 1)
+    h["data_used_mb"] = round(stress_mb + agent_mb, 1)
+
     h["conclusions"] = _conclusions(h)
     h["last_stress"] = dict(_last_stress)
     return h

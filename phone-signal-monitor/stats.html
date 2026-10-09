@@ -104,6 +104,11 @@
     <h2 data-i18n="quality_dist">Quality distribution</h2>
     <div id="qdist"></div>
   </div>
+  <div class="card">
+    <h2 data-i18n="by_hour">By hour of day (local)</h2>
+    <svg id="hourChart" viewBox="0 0 800 140" preserveAspectRatio="none"></svg>
+    <div class="legend" id="hourLegend"></div>
+  </div>
 
   <footer><span id="foot"></span></footer>
 </div>
@@ -127,7 +132,7 @@ let profile = localStorage.getItem("pw_profile") || "family";
 const T = {
   en:{title:"Reception statistics",live:"◀ live",all:"all",profile:"Usage profile",target_mbps:"target Mbps",
       conclusions:"Conclusions",rsrp_over_time:"RSRP over time",coverage:"Sample coverage (gaps = phone/PC off)",
-      quality_dist:"Quality distribution",
+      quality_dist:"Quality distribution",by_hour:"By hour of day (local)",by_hour_legend:"% of time with usable quality (≥ fair) per hour — low bars at peak evening hours = congestion",k_data_used:"Data used (est.)",
       p_family:"Family / streaming",p_uhd4k:"Streaming 4K",p_work:"Remote work / video calls",p_basic:"Basic: browsing + smart home",p_custom:"Custom",
       k_rsrp:"Median RSRP",k_qual:"Quality ≥ fair",k_up:"Uplink OK",k_band:"Main band",k_samples:"Samples",k_days:"Days covered",k_http:"HTTP latency",
       good:"Looks good",borderline:"Borderline",bad:"Not enough",unknown:"Not enough data yet",
@@ -136,7 +141,7 @@ const T = {
       q:{excellent:"excellent",good:"good",fair:"fair",poor:"poor",very_poor:"very poor"}},
   it:{title:"Statistiche presa rete",live:"◀ live",all:"tutto",profile:"Profilo d'uso",target_mbps:"target Mbps",
       conclusions:"Conclusioni",rsrp_over_time:"Andamento RSRP",coverage:"Copertura campioni (buchi = telefono/PC spenti)",
-      quality_dist:"Distribuzione qualità",
+      quality_dist:"Distribuzione qualità",by_hour:"Per ora del giorno (locale)",by_hour_legend:"% di tempo con qualità usabile (≥ discreta) per ora — barre basse la sera = congestione",k_data_used:"Dati usati (stima)",
       p_family:"Famiglia / streaming",p_uhd4k:"Streaming 4K",p_work:"Smart working / videochiamate",p_basic:"Base: navigazione + domotica",p_custom:"Personalizzato",
       k_rsrp:"RSRP mediano",k_qual:"Qualità ≥ discreta",k_up:"Uplink ok",k_band:"Banda prevalente",k_samples:"Campioni",k_days:"Giorni coperti",k_http:"Latenza HTTP",
       good:"Va bene",borderline:"Al limite",bad:"Non basta",unknown:"Dati ancora insufficienti",
@@ -239,7 +244,20 @@ function renderKpis(h){
     kpi(t.k_days, h.days_covered!=null?h.days_covered:'—'),
   ];
   if(h.http_ms_median!=null) tiles.push(kpi(t.k_http,h.http_ms_median,h.http_ms_median<150?'good':h.http_ms_median<400?'warn':'bad','ms'));
+  if(h.data_used_mb!=null) tiles.push(kpi(t.k_data_used,h.data_used_mb,'','MB'));
   $("kpis").innerHTML=tiles.join("");
+}
+function renderByHour(h){
+  const bh=h.by_hour||[],W=800,H=140,padL=28,padR=8,padT=8,padB=22;
+  if(!bh.some(x=>x.n)){ $("hourChart").innerHTML=`<text x="400" y="70" fill="var(--faint)" font-size="13" text-anchor="middle">${L("no data","nessun dato")}</text>`; $("hourLegend").textContent=""; return; }
+  const bw=(W-padL-padR)/24; let g='';
+  for(let v=0;v<=100;v+=50){const y=padT+(100-v)*(H-padT-padB)/100; g+=`<line x1="${padL}" y1="${y}" x2="${W-padR}" y2="${y}" stroke="var(--line)"/><text x="2" y="${y+4}" fill="var(--faint)" font-size="10">${v}</text>`;}
+  bh.forEach((b,i)=>{ if(b.ok_quality_pct==null) return;
+    const val=b.ok_quality_pct, hgt=(H-padT-padB)*val/100, c=val>=80?'var(--accent)':val>=50?'var(--warn)':'var(--bad)', x=padL+i*bw;
+    g+=`<rect x="${(x+1).toFixed(1)}" y="${(H-padB-hgt).toFixed(1)}" width="${Math.max(1,bw-2).toFixed(1)}" height="${hgt.toFixed(1)}" fill="${c}"><title>${b.hour}:00 — ${val}% (${b.n})</title></rect>`;
+  });
+  for(let hh=0;hh<24;hh+=3){const x=padL+hh*bw+bw/2; g+=`<text x="${x.toFixed(1)}" y="${H-6}" fill="var(--faint)" font-size="10" text-anchor="middle">${hh}</text>`;}
+  $("hourChart").innerHTML=g; $("hourLegend").textContent=tr().by_hour_legend;
 }
 function renderRsrpChart(h){
   const s=h.series||[],W=800,H=220,padL=42,padR=12,padT=12,padB=24,yMin=-120,yMax=-60;
@@ -275,7 +293,7 @@ function renderAll(){
   $("vLvl").textContent = tr()[c.level] || tr().unknown;
   $("vFor").textContent = tr().forUse(profName(profile));
   $("concl").innerHTML = c.bullets.map(b=>`<li>${b}</li>`).join("");
-  renderKpis(h); renderRsrpChart(h); renderCoverage(h); renderQdist(h);
+  renderKpis(h); renderRsrpChart(h); renderCoverage(h); renderQdist(h); renderByHour(h);
 }
 
 async function load(){
