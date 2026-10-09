@@ -1,0 +1,9 @@
+# Nessuna dipendenza esterna: gira tutto con la libreria standard di Python 3.
+#
+# Servono solo alcuni strumenti di sistema (di norma gia' presenti):
+#   - curl          (usato dallo stress test)
+#   - adb           (solo per adb_signal.py: lettura segnale via cavo)
+#                     sudo apt install adb
+#
+# Sul telefono (Termux) l'agente usa Termux:API:
+#   pkg install python termux-api      (+ app "Termux:API" da F-Droid)
