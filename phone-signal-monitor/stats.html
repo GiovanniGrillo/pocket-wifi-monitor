@@ -1,13 +1,13 @@
 <!doctype html>
-<html lang="it">
+<html lang="en">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Statistiche presa rete</title>
+<title>Reception statistics</title>
 <style>
-  :root {
-    --bg:#0e1116; --card:#1b222c; --line:#273040; --txt:#e6edf3; --dim:#8b98a9;
-    --faint:#5a6778; --accent:#3fb950; --warn:#d29922; --bad:#f85149;
+  :root{
+    --bg:#0e1116;--card:#1b222c;--line:#273040;--txt:#e6edf3;--dim:#8b98a9;
+    --faint:#5a6778;--accent:#3fb950;--warn:#d29922;--bad:#f85149;
     --mono:ui-monospace,"SF Mono","JetBrains Mono",Menlo,Consolas,monospace;
     --sans:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
   }
@@ -15,34 +15,43 @@
   *{box-sizing:border-box;}
   body{margin:0;background:var(--bg);color:var(--txt);font-family:var(--sans);line-height:1.45;-webkit-font-smoothing:antialiased;}
   .wrap{max-width:960px;margin:0 auto;padding:20px 16px 60px;}
-  header{display:flex;align-items:center;gap:12px;flex-wrap:wrap;padding:6px 2px 18px;}
+  header{display:flex;align-items:center;gap:12px;flex-wrap:wrap;padding:6px 2px 16px;}
   .logo{width:40px;height:40px;border-radius:10px;flex:none;background:linear-gradient(135deg,var(--accent),#2ea043);display:grid;place-items:center;color:#0b0f14;font-weight:800;font-size:15px;}
   h1{margin:0;font-size:18px;font-weight:650;}
   .sub{margin:0;font-size:12.5px;color:var(--dim);}
   .spacer{flex:1;}
-  a.link{font-size:12.5px;color:var(--accent);text-decoration:none;border:1px solid var(--line);border-radius:8px;padding:6px 11px;}
+  .btn{font:inherit;font-size:12.5px;color:var(--dim);background:transparent;border:1px solid var(--line);border-radius:8px;padding:6px 11px;cursor:pointer;text-decoration:none;display:inline-flex;align-items:center;gap:6px;}
+  .btn:hover{color:var(--txt);border-color:var(--faint);}
   .seg{display:inline-flex;border:1px solid var(--line);border-radius:8px;overflow:hidden;}
   .seg button{font:inherit;font-size:12.5px;background:transparent;color:var(--dim);border:0;padding:6px 12px;cursor:pointer;}
   .seg button.on{background:var(--accent);color:#0b0f14;font-weight:600;}
-  .kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-bottom:16px;}
+
+  .controls{display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin-bottom:14px;}
+  .controls label{font-size:12px;color:var(--faint);text-transform:uppercase;letter-spacing:.6px;}
+  select,input[type=number]{font:inherit;font-size:13px;background:var(--card);color:var(--txt);border:1px solid var(--line);border-radius:8px;padding:7px 9px;}
+  input[type=number]{width:90px;}
+
+  .verdict{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:18px 20px;margin-bottom:14px;}
+  .verdict .lvl{font-size:22px;font-weight:750;letter-spacing:-.3px;}
+  .verdict .for{font-size:12.5px;color:var(--dim);margin-top:2px;}
+  .lvl.good{color:var(--accent);} .lvl.borderline{color:var(--warn);} .lvl.bad{color:var(--bad);} .lvl.unknown{color:var(--dim);}
+
+  .kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-bottom:14px;}
   .kpi{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px 15px;}
   .kpi .l{font-size:11px;text-transform:uppercase;letter-spacing:.6px;color:var(--faint);}
-  .kpi .v{font-size:23px;font-weight:700;font-family:var(--mono);letter-spacing:-.5px;margin-top:3px;}
+  .kpi .v{font-size:22px;font-weight:700;font-family:var(--mono);letter-spacing:-.5px;margin-top:3px;}
   .kpi .v small{font-size:13px;color:var(--dim);font-weight:500;}
   .v.good{color:var(--accent);} .v.warn{color:var(--warn);} .v.bad{color:var(--bad);}
   .card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px 17px;margin-bottom:14px;}
   .card h2{margin:0 0 12px;font-size:11px;font-weight:700;letter-spacing:.7px;text-transform:uppercase;color:var(--faint);}
   svg{display:block;width:100%;height:auto;}
   .qbar{display:flex;align-items:center;gap:10px;margin:7px 0;font-size:13px;}
-  .qbar .name{width:70px;color:var(--dim);}
-  .qbar .track{flex:1;height:14px;background:color-mix(in srgb,var(--line) 60%,transparent);border-radius:7px;overflow:hidden;}
-  .qbar .fill{height:100%;border-radius:7px;}
-  .qbar .pct{width:42px;text-align:right;font-family:var(--mono);}
-  ul.concl{margin:0;padding-left:18px;} ul.concl li{margin:7px 0;font-size:14px;}
-  ul.concl b{color:var(--txt);}
+  .qbar .name{width:90px;color:var(--dim);} .qbar .track{flex:1;height:14px;background:color-mix(in srgb,var(--line) 60%,transparent);border-radius:7px;overflow:hidden;}
+  .qbar .fill{height:100%;border-radius:7px;} .qbar .pct{width:42px;text-align:right;font-family:var(--mono);}
+  ul.concl{margin:0;padding-left:18px;} ul.concl li{margin:8px 0;font-size:14px;} ul.concl b{color:var(--txt);}
+  .legend{font-size:11px;color:var(--faint);margin-top:6px;}
   .muted{color:var(--faint);}
   footer{margin-top:20px;text-align:center;font-size:12px;color:var(--faint);}
-  .legend{font-size:11px;color:var(--faint);margin-top:6px;}
 </style>
 </head>
 <body>
@@ -50,155 +59,243 @@
   <header>
     <div class="logo">PW</div>
     <div>
-      <h1>Statistiche presa rete</h1>
-      <p class="sub" id="sub">caricamento…</p>
+      <h1 data-i18n="title">Reception statistics</h1>
+      <p class="sub" id="sub">loading…</p>
     </div>
     <div class="spacer"></div>
-    <div class="seg" id="seg">
-      <button data-d="7">7 gg</button>
-      <button data-d="30" class="on">30 gg</button>
-      <button data-d="365">tutto</button>
+    <div class="seg" id="segDays">
+      <button data-d="7">7</button><button data-d="30" class="on">30</button><button data-d="365" data-i18n="all">all</button>
     </div>
-    <a class="link" href="/">◀ live</a>
+    <button class="btn" id="langBtn">🌐 IT</button>
+    <a class="btn" href="/" data-i18n="live">◀ live</a>
   </header>
+
+  <div class="controls">
+    <label data-i18n="profile">Usage profile</label>
+    <select id="profile"></select>
+    <span id="customWrap" style="display:none">
+      <input type="number" id="customMbps" min="1" max="1000" value="10">
+      <span class="muted" data-i18n="target_mbps">target Mbps</span>
+    </span>
+  </div>
+
+  <div class="verdict">
+    <div class="lvl unknown" id="vLvl">—</div>
+    <div class="for" id="vFor"></div>
+  </div>
+
+  <div class="card">
+    <h2 data-i18n="conclusions">Conclusions</h2>
+    <ul class="concl" id="concl"><li class="muted">—</li></ul>
+  </div>
 
   <div class="kpis" id="kpis"></div>
 
   <div class="card">
-    <h2>Andamento RSRP nel tempo</h2>
-    <svg id="rsrpChart" viewBox="0 0 800 220" preserveAspectRatio="none" role="img"></svg>
+    <h2 data-i18n="rsrp_over_time">RSRP over time</h2>
+    <svg id="rsrpChart" viewBox="0 0 800 220" preserveAspectRatio="none"></svg>
     <div class="legend" id="rsrpLegend"></div>
   </div>
-
   <div class="card">
-    <h2>Copertura campioni (buchi = telefono/PC spenti)</h2>
-    <svg id="covChart" viewBox="0 0 800 90" preserveAspectRatio="none" role="img"></svg>
+    <h2 data-i18n="coverage">Sample coverage (gaps = phone/PC off)</h2>
+    <svg id="covChart" viewBox="0 0 800 90" preserveAspectRatio="none"></svg>
   </div>
-
   <div class="card">
-    <h2>Distribuzione qualità</h2>
+    <h2 data-i18n="quality_dist">Quality distribution</h2>
     <div id="qdist"></div>
   </div>
 
-  <div class="card">
-    <h2>Conclusioni</h2>
-    <ul class="concl" id="concl"><li class="muted">—</li></ul>
-  </div>
-
-  <footer><span id="foot">aggiornamento ogni 60 s</span></footer>
+  <footer><span id="foot"></span></footer>
 </div>
 
 <script>
 const $ = id => document.getElementById(id);
-let days = 30;
+const dash = v => (v === undefined || v === null || v === "") ? null : v;
+let days = 30, last = null;
+let lang = (localStorage.getItem("pw_lang") || "en");
 
-const QCOL = {excellent:"var(--accent)", good:"var(--accent)", fair:"var(--warn)", poor:"var(--bad)", very_poor:"var(--bad)"};
-const QNAME = {excellent:"eccellente", good:"buono", fair:"discreto", poor:"scarso", very_poor:"pessimo"};
+// ---- usage profiles: target sustained Mbps + latency-under-load thresholds (ms added) ----
+const PROFILES = {
+  family: {mbps:15, latSoft:120, latHard:250},
+  uhd4k:  {mbps:30, latSoft:150, latHard:300},
+  work:   {mbps:8,  latSoft:60,  latHard:120},
+  basic:  {mbps:4,  latSoft:200, latHard:400},
+  custom: {mbps:10, latSoft:120, latHard:250},
+};
+let profile = localStorage.getItem("pw_profile") || "family";
 
-function kpi(label, value, cls, sub){
-  return `<div class="kpi"><div class="l">${label}</div><div class="v ${cls||''}">${value}${sub?` <small>${sub}</small>`:''}</div></div>`;
+const T = {
+  en:{title:"Reception statistics",live:"◀ live",all:"all",profile:"Usage profile",target_mbps:"target Mbps",
+      conclusions:"Conclusions",rsrp_over_time:"RSRP over time",coverage:"Sample coverage (gaps = phone/PC off)",
+      quality_dist:"Quality distribution",
+      p_family:"Family / streaming",p_uhd4k:"Streaming 4K",p_work:"Remote work / video calls",p_basic:"Basic: browsing + smart home",p_custom:"Custom",
+      k_rsrp:"Median RSRP",k_qual:"Quality ≥ fair",k_up:"Uplink OK",k_band:"Main band",k_samples:"Samples",k_days:"Days covered",k_http:"HTTP latency",
+      good:"Looks good",borderline:"Borderline",bad:"Not enough",unknown:"Not enough data yet",
+      forUse:u=>`for “${u}”`,waiting:"waiting for data from the phone…",
+      updated:"updated",every:"every 60 s",
+      q:{excellent:"excellent",good:"good",fair:"fair",poor:"poor",very_poor:"very poor"}},
+  it:{title:"Statistiche presa rete",live:"◀ live",all:"tutto",profile:"Profilo d'uso",target_mbps:"target Mbps",
+      conclusions:"Conclusioni",rsrp_over_time:"Andamento RSRP",coverage:"Copertura campioni (buchi = telefono/PC spenti)",
+      quality_dist:"Distribuzione qualità",
+      p_family:"Famiglia / streaming",p_uhd4k:"Streaming 4K",p_work:"Smart working / videochiamate",p_basic:"Base: navigazione + domotica",p_custom:"Personalizzato",
+      k_rsrp:"RSRP mediano",k_qual:"Qualità ≥ discreta",k_up:"Uplink ok",k_band:"Banda prevalente",k_samples:"Campioni",k_days:"Giorni coperti",k_http:"Latenza HTTP",
+      good:"Va bene",borderline:"Al limite",bad:"Non basta",unknown:"Dati ancora insufficienti",
+      forUse:u=>`per “${u}”`,waiting:"in attesa di dati dal telefono…",
+      updated:"aggiornato",every:"ogni 60 s",
+      q:{excellent:"eccellente",good:"buono",fair:"discreto",poor:"scarso",very_poor:"pessimo"}},
+};
+const tr = () => T[lang];
+const L = (en, it) => lang === "it" ? it : en;
+const profName = id => tr()["p_" + id];
+
+function applyStatic(){
+  document.documentElement.lang = lang;
+  document.querySelectorAll("[data-i18n]").forEach(el=>{ const k=el.getAttribute("data-i18n"); if(tr()[k]) el.textContent=tr()[k]; });
+  $("langBtn").textContent = lang === "it" ? "🌐 EN" : "🌐 IT";
+  // profile dropdown
+  const sel = $("profile"); const cur = profile;
+  sel.innerHTML = Object.keys(PROFILES).map(id=>`<option value="${id}">${profName(id)}</option>`).join("");
+  sel.value = cur;
+  $("customWrap").style.display = profile === "custom" ? "" : "none";
+  $("foot").textContent = tr().every;
 }
-function rsrpClass(v){ if(v===null||v===undefined) return ''; if(v>=-90) return 'good'; if(v>=-100) return 'warn'; return 'bad'; }
+
+// ---------- conclusions engine ----------
+function profileTarget(){
+  const p = {...PROFILES[profile]};
+  if (profile === "custom") p.mbps = Math.max(1, parseInt($("customMbps").value,10) || 10);
+  return p;
+}
+const WORST = (...xs)=>{ const o=["bad","borderline","good"]; return xs.filter(Boolean).sort((a,b)=>o.indexOf(a)-o.indexOf(b))[0]; };
+
+function buildConclusions(h){
+  const p = profileTarget();
+  const bullets = [];
+  if (!h || !h.n){ return {level:"unknown", bullets:[L("No samples yet — start the phone agent and they will appear here.","Nessun campione ancora — avvia l'agente sul telefono e compariranno qui.")]}; }
+  const rsrp = (h.rsrp||{}).median;
+  const okq = h.pct_ok_quality, up = h.uplink_ok_pct;
+  const st = h.last_stress || {};
+  const mbps = dash(st.dl_mbps);
+  const latAdd = (st.lat_idle_ms!=null && st.lat_load_ms!=null) ? Math.round(st.lat_load_ms - st.lat_idle_ms) : null;
+
+  // coverage (signal)
+  let cov = (rsrp==null) ? null : (rsrp>=-100 && okq>=70) ? "good" : (rsrp>=-110 && okq>=40) ? "borderline" : "bad";
+  if (rsrp!=null) bullets.push(L(
+    `<b>Signal</b>: median RSRP ${rsrp} dBm, usable (≥ fair) ${okq}% of the time → ${ {good:"solid",borderline:"usable but dips",bad:"weak"}[cov] }.`,
+    `<b>Segnale</b>: RSRP mediano ${rsrp} dBm, usabile (≥ discreta) nel ${okq}% del tempo → ${ {good:"solido",borderline:"usabile ma con cali",bad:"debole"}[cov] }.`));
+
+  // reliability (uplink http 204)
+  let rel = (up==null) ? null : up>=95 ? "good" : up>=80 ? "borderline" : "bad";
+  if (up!=null) bullets.push(L(
+    `<b>Reliability</b>: data worked (HTTP 204) ${up}% of samples → ${ {good:"dependable link",borderline:"occasional drops",bad:"frequent outages"}[rel] }.`,
+    `<b>Affidabilità</b>: dato funzionante (HTTP 204) nel ${up}% dei campioni → ${ {good:"link affidabile",borderline:"cali occasionali",bad:"buchi frequenti"}[rel] }.`));
+
+  // throughput (needs a stress test)
+  let thr = null;
+  if (mbps!=null){
+    thr = mbps>=p.mbps ? "good" : mbps>=0.6*p.mbps ? "borderline" : "bad";
+    bullets.push(L(
+      `<b>Throughput</b>: last stress test ${mbps} Mbps vs ~${p.mbps} Mbps needed → ${ {good:"enough",borderline:"tight",bad:"short"}[thr] }.`,
+      `<b>Velocità</b>: ultimo stress test ${mbps} Mbps contro ~${p.mbps} Mbps richiesti → ${ {good:"sufficiente",borderline:"giusta giusta",bad:"insufficiente"}[thr] }.`));
+  } else {
+    bullets.push(L(
+      `<b>Throughput</b>: no stress test yet — run one (dashboard ▸ stress test) to judge Mbps against the ~${p.mbps} Mbps this profile needs.`,
+      `<b>Velocità</b>: nessuno stress test ancora — lanciane uno (dashboard ▸ stress test) per valutare i Mbps rispetto ai ~${p.mbps} Mbps richiesti da questo profilo.`));
+  }
+
+  // latency under load (bufferbloat)
+  let buf = null;
+  if (latAdd!=null){
+    buf = latAdd<=p.latSoft ? "good" : latAdd<=p.latHard ? "borderline" : "bad";
+    bullets.push(L(
+      `<b>Latency under load</b>: +${latAdd} ms when busy → ${ {good:"stable",borderline:"some lag",bad:"bufferbloat: calls/games will stutter"}[buf] }.`,
+      `<b>Latenza sotto carico</b>: +${latAdd} ms quando è occupato → ${ {good:"stabile",borderline:"qualche lag",bad:"bufferbloat: chiamate/giochi scattano"}[buf] }.`));
+  }
+
+  // band note
+  if (h.band_main) bullets.push(L(
+    `<b>Band</b>: mostly ${h.band_main}${h.low_band_pct>0?`, low-band (sub-GHz, good reach) ${h.low_band_pct}% of the time`:" — no sub-GHz band, limited reach through walls"}.`,
+    `<b>Banda</b>: prevalente ${h.band_main}${h.low_band_pct>0?`, banda bassa (sub-GHz, buona portata) nel ${h.low_band_pct}% del tempo`:" — nessuna banda bassa, portata nei muri limitata"}.`));
+
+  if (h.trend) bullets.push("<b>"+L("Trend","Andamento")+"</b>: "+h.trend);
+
+  const level = WORST(cov, rel, thr, buf) || "unknown";
+  if (!mbps) bullets.push("<i>"+L("These stats measure reception; run a stress test for the actual speed.","Queste statistiche misurano la presa; per la velocità reale fai uno stress test.")+"</i>");
+  return {level, bullets};
+}
+
+// ---------- render ----------
+function rsrpClass(v){ if(v==null) return ''; if(v>=-90) return 'good'; if(v>=-100) return 'warn'; return 'bad'; }
+function kpi(label,value,cls,sub){ return `<div class="kpi"><div class="l">${label}</div><div class="v ${cls||''}">${value}${sub?` <small>${sub}</small>`:''}</div></div>`; }
 
 function renderKpis(h){
-  const r = h.rsrp||{};
-  const tiles = [];
-  tiles.push(kpi("RSRP mediano", r.median!=null?`${r.median}`:'—', rsrpClass(r.median), r.median!=null?'dBm':''));
-  tiles.push(kpi("Qualità ≥ discreta", h.pct_ok_quality!=null?`${h.pct_ok_quality}`:'—', h.pct_ok_quality>=80?'good':h.pct_ok_quality>=50?'warn':'bad', '%'));
-  tiles.push(kpi("Uplink ok", h.uplink_ok_pct!=null?`${h.uplink_ok_pct}`:'—', h.uplink_ok_pct>=95?'good':h.uplink_ok_pct>=80?'warn':'bad','%'));
-  tiles.push(kpi("Banda prevalente", h.band_main||'—', h.low_band_pct>0?'good':''));
-  tiles.push(kpi("Campioni", h.n!=null?h.n.toLocaleString('it'):'—'));
-  tiles.push(kpi("Giorni coperti", h.days_covered!=null?h.days_covered:'—', '', h.days_covered!=null?'gg':''));
-  if(h.http_ms_median!=null) tiles.push(kpi("Latenza http", h.http_ms_median, h.http_ms_median<150?'good':h.http_ms_median<400?'warn':'bad','ms'));
-  $("kpis").innerHTML = tiles.join("");
+  const r=h.rsrp||{}, t=tr();
+  const tiles=[
+    kpi(t.k_rsrp, r.median!=null?`${r.median}`:'—', rsrpClass(r.median), r.median!=null?'dBm':''),
+    kpi(t.k_qual, h.pct_ok_quality!=null?h.pct_ok_quality:'—', h.pct_ok_quality>=80?'good':h.pct_ok_quality>=50?'warn':'bad','%'),
+    kpi(t.k_up, h.uplink_ok_pct!=null?h.uplink_ok_pct:'—', h.uplink_ok_pct>=95?'good':h.uplink_ok_pct>=80?'warn':'bad','%'),
+    kpi(t.k_band, h.band_main||'—', h.low_band_pct>0?'good':''),
+    kpi(t.k_samples, h.n!=null?h.n.toLocaleString():'—'),
+    kpi(t.k_days, h.days_covered!=null?h.days_covered:'—'),
+  ];
+  if(h.http_ms_median!=null) tiles.push(kpi(t.k_http,h.http_ms_median,h.http_ms_median<150?'good':h.http_ms_median<400?'warn':'bad','ms'));
+  $("kpis").innerHTML=tiles.join("");
 }
-
 function renderRsrpChart(h){
-  const s = h.series||[];
-  const W=800,H=220,padL=42,padR=12,padT=12,padB=24;
-  const yMin=-120,yMax=-60;
-  const x = i => padL + (s.length<=1?0:i*(W-padL-padR)/(s.length-1));
-  const y = v => padT + (yMax-v)*(H-padT-padB)/(yMax-yMin);
-  let g = '';
-  // gridlines + labels every 10 dBm
-  for(let v=-60; v>=-120; v-=10){
-    const yy=y(v);
-    g += `<line x1="${padL}" y1="${yy}" x2="${W-padR}" y2="${yy}" stroke="var(--line)" stroke-width="1"/>`;
-    g += `<text x="4" y="${yy+4}" fill="var(--faint)" font-size="11">${v}</text>`;
-  }
-  // polyline, breaking on null
-  let pts=[], segs=[];
-  s.forEach((p,i)=>{ if(p.rsrp_median==null){ if(pts.length)segs.push(pts); pts=[]; } else pts.push(`${x(i).toFixed(1)},${y(p.rsrp_median).toFixed(1)}`); });
-  if(pts.length)segs.push(pts);
-  segs.forEach(seg=>{ g += `<polyline points="${seg.join(' ')}" fill="none" stroke="var(--accent)" stroke-width="2"/>`; });
-  // dots
-  s.forEach((p,i)=>{ if(p.rsrp_median!=null) g += `<circle cx="${x(i).toFixed(1)}" cy="${y(p.rsrp_median).toFixed(1)}" r="2.2" fill="var(--accent)"/>`; });
-  $("rsrpChart").innerHTML = g || `<text x="${W/2}" y="${H/2}" fill="var(--faint)" font-size="13" text-anchor="middle">nessun dato</text>`;
-  if(s.length){
-    const f=new Date(s[0].t), l=new Date(s[s.length-1].t);
-    const fmt=d=>d.toLocaleString('it',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'});
-    $("rsrpLegend").textContent = `da ${fmt(f)} a ${fmt(l)} · ${h.bucket==='day'?'media giornaliera':'media oraria'} · più alto = meglio`;
-  } else $("rsrpLegend").textContent='';
-}
-
-function renderCoverage(h){
-  const s=h.series||[]; const W=800,H=90,padB=4;
-  if(!s.length){ $("covChart").innerHTML=`<text x="${W/2}" y="45" fill="var(--faint)" font-size="13" text-anchor="middle">nessun dato</text>`; return; }
-  const maxN=Math.max(...s.map(p=>p.n),1);
-  const bw=(W)/s.length;
+  const s=h.series||[],W=800,H=220,padL=42,padR=12,padT=12,padB=24,yMin=-120,yMax=-60;
+  const x=i=>padL+(s.length<=1?0:i*(W-padL-padR)/(s.length-1)), y=v=>padT+(yMax-v)*(H-padT-padB)/(yMax-yMin);
   let g='';
-  s.forEach((p,i)=>{
-    const hgt=(H-padB)*p.n/maxN;
-    const col = p.ok_rate>=95?'var(--accent)':p.ok_rate>=50?'var(--warn)':'var(--bad)';
-    g += `<rect x="${(i*bw).toFixed(1)}" y="${(H-padB-hgt).toFixed(1)}" width="${Math.max(1,bw-1).toFixed(1)}" height="${hgt.toFixed(1)}" fill="${col}"/>`;
-  });
-  $("covChart").innerHTML=g;
+  for(let v=-60;v>=-120;v-=10){const yy=y(v);g+=`<line x1="${padL}" y1="${yy}" x2="${W-padR}" y2="${yy}" stroke="var(--line)"/><text x="4" y="${yy+4}" fill="var(--faint)" font-size="11">${v}</text>`;}
+  let pts=[],segs=[];
+  s.forEach((p,i)=>{if(p.rsrp_median==null){if(pts.length)segs.push(pts);pts=[];}else pts.push(`${x(i).toFixed(1)},${y(p.rsrp_median).toFixed(1)}`);});
+  if(pts.length)segs.push(pts);
+  segs.forEach(seg=>g+=`<polyline points="${seg.join(' ')}" fill="none" stroke="var(--accent)" stroke-width="2"/>`);
+  $("rsrpChart").innerHTML=g||`<text x="400" y="110" fill="var(--faint)" font-size="13" text-anchor="middle">${L("no data","nessun dato")}</text>`;
+  $("rsrpLegend").textContent = s.length ? L("higher = better","più alto = meglio")+" · "+(h.bucket==="day"?L("daily median","media giornaliera"):L("hourly median","media oraria")) : "";
 }
-
+function renderCoverage(h){
+  const s=h.series||[],W=800,H=90,padB=4;
+  if(!s.length){$("covChart").innerHTML=`<text x="400" y="45" fill="var(--faint)" font-size="13" text-anchor="middle">${L("no data","nessun dato")}</text>`;return;}
+  const maxN=Math.max(...s.map(p=>p.n),1),bw=W/s.length;
+  $("covChart").innerHTML=s.map((p,i)=>{const hgt=(H-padB)*p.n/maxN;const c=p.ok_rate>=95?'var(--accent)':p.ok_rate>=50?'var(--warn)':'var(--bad)';return `<rect x="${(i*bw).toFixed(1)}" y="${(H-padB-hgt).toFixed(1)}" width="${Math.max(1,bw-1).toFixed(1)}" height="${hgt.toFixed(1)}" fill="${c}"/>`;}).join("");
+}
 function renderQdist(h){
-  const p=h.quality_pct||{};
-  const order=["excellent","good","fair","poor","very_poor"];
-  $("qdist").innerHTML = order.map(q=>{
-    const v=p[q]||0;
-    return `<div class="qbar"><span class="name">${QNAME[q]}</span><span class="track"><span class="fill" style="width:${v}%;background:${QCOL[q]}"></span></span><span class="pct">${v}%</span></div>`;
-  }).join("");
+  const p=h.quality_pct||{},q=tr().q,order=["excellent","good","fair","poor","very_poor"];
+  const col={excellent:"var(--accent)",good:"var(--accent)",fair:"var(--warn)",poor:"var(--bad)",very_poor:"var(--bad)"};
+  $("qdist").innerHTML=order.map(k=>{const v=p[k]||0;return `<div class="qbar"><span class="name">${q[k]}</span><span class="track"><span class="fill" style="width:${v}%;background:${col[k]}"></span></span><span class="pct">${v}%</span></div>`;}).join("");
 }
 
-function render(h){
-  $("sub").textContent = h.n ? `${h.n.toLocaleString('it')} campioni · ${h.operators&&h.operators.length?h.operators.join(', '):'—'} · ultimi ${h.window_days} giorni` : "in attesa di dati dal telefono…";
+function renderAll(){
+  applyStatic();
+  const h = last;
+  if(!h){return;}
+  $("sub").textContent = h.n ? `${h.n.toLocaleString()} ${L("samples","campioni")} · ${(h.operators||[]).join(", ")||"—"}` : tr().waiting;
+  const c = buildConclusions(h);
+  $("vLvl").className = "lvl " + c.level;
+  $("vLvl").textContent = tr()[c.level] || tr().unknown;
+  $("vFor").textContent = tr().forUse(profName(profile));
+  $("concl").innerHTML = c.bullets.map(b=>`<li>${b}</li>`).join("");
   renderKpis(h); renderRsrpChart(h); renderCoverage(h); renderQdist(h);
-  const c=h.conclusions||[];
-  $("concl").innerHTML = c.length ? c.map(t=>`<li>${t.replace(/\*\*(.+?)\*\*/g,'<b>$1</b>')}</li>`).join("") : `<li class="muted">—</li>`;
 }
 
 async function load(){
   try{
-    const headers = {};
-    const tok = localStorage.getItem("pw_token");
-    if (tok) headers["X-Token"] = tok;
-    let r = await fetch(`/history?days=${days}`, {cache:"no-store", headers});
-    if (r.status === 403) {
-      const entered = prompt("Token del collector:");
-      if (entered) {
-        localStorage.setItem("pw_token", entered);
-        headers["X-Token"] = entered;
-        r = await fetch(`/history?days=${days}`, {cache:"no-store", headers});
-      }
-    }
-    render(await r.json());
-    $("foot").textContent = "aggiornato " + new Date().toLocaleTimeString('it') + " · ogni 60 s";
-  }catch(e){ $("sub").textContent="collector non raggiungibile"; }
+    const r = await fetch(`/history?days=${days}`,{cache:"no-store",headers: tokHeaders()});
+    if(r.status===403){ const t=prompt("Token:"); if(t){localStorage.setItem("pw_token",t); return load();} return; }
+    last = await r.json(); renderAll();
+    $("foot").textContent = tr().updated+" "+new Date().toLocaleTimeString()+" · "+tr().every;
+  }catch(e){ $("sub").textContent="collector offline"; }
 }
+function tokHeaders(){ const t=localStorage.getItem("pw_token"); return t?{"X-Token":t}:{}; }
 
-$("seg").addEventListener("click", e=>{
-  const b=e.target.closest("button"); if(!b) return;
-  days=parseInt(b.dataset.d,10);
-  [...$("seg").children].forEach(x=>x.classList.toggle("on",x===b));
-  load();
-});
+$("segDays").addEventListener("click",e=>{const b=e.target.closest("button");if(!b)return;days=parseInt(b.dataset.d,10);[...$("segDays").children].forEach(x=>x.classList.toggle("on",x===b));load();});
+$("langBtn").addEventListener("click",()=>{lang=lang==="it"?"en":"it";localStorage.setItem("pw_lang",lang);renderAll();});
+$("profile").addEventListener("change",e=>{profile=e.target.value;localStorage.setItem("pw_profile",profile);$("customWrap").style.display=profile==="custom"?"":"none";renderAll();});
+$("customMbps").addEventListener("input",renderAll);
 
+applyStatic();
 load();
-setInterval(load, 60000);
+setInterval(load,60000);
 </script>
 </body>
 </html>
