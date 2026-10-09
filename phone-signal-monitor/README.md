@@ -23,7 +23,7 @@ phone_agent.py ── HTTP su Tailscale ──▶  data/ + dashboard
 - `phone_agent.py` legge LTE, batteria e connettività, mantiene un outbox locale
   e ritenta i campioni quando il PC non è raggiungibile.
 - `collector.py` riceve singoli campioni o batch, deduplica nella vista storica
-  e serve `/`, `/stats`, `/data` e `/history`.
+  e serve `/`, `/stats`, `/data`, `/history` e `/control` (stop remoto e stress test).
 - `bands.py` contiene solo funzioni standard-library per EARFCN, bande e qualità.
 - `adb_signal.py` offre una lettura rapida via USB/ADB senza Termux.
 - `stresstest.py` misura throughput e latenza sotto carico tramite tethering USB.
@@ -45,6 +45,16 @@ python3 -c 'import secrets; print(secrets.token_urlsafe(32))'
 Il collector rifiuta l'avvio esposto sulla rete senza `--token` e protegge sia
 le API di scrittura sia quelle di lettura. Tailscale è consigliato per evitare
 il port forwarding; non è una sostituzione del token.
+
+Il collector parla **HTTP in chiaro**: la riservatezza del token e dei dati in
+transito dipende dalla cifratura di Tailscale (WireGuard). Non esporre il
+collector su un'interfaccia pubblica senza un reverse proxy TLS davanti. Per
+difesa in profondità puoi legarlo al solo indirizzo Tailscale invece che a
+`0.0.0.0`:
+
+```bash
+python3 collector.py --bind "$(tailscale ip -4 | head -1)" --token "$POCKET_WIFI_TOKEN"
+```
 
 ## Avvio sul PC
 
@@ -124,6 +134,22 @@ interrompe il processo in background.
 - `http 204` misura che il traffico funziona, non la velocità disponibile.
   Per la velocità usa lo stress test con un budget dati esplicito.
 
+## Controllo remoto e sicurezza del sensore
+
+Dalla dashboard (o via `POST /control`) puoi, anche da fuori casa:
+
+- **Fermare/riprendere** il sensore: alza un flag che il telefono legge al ciclo
+  successivo e termina in modo pulito. Utile per interrompere da remoto.
+- **Avviare uno stress test** on-demand sulla rete mobile del telefono (download
+  a più flussi + latenza sotto carico), con un **budget dati** scelto al momento;
+  il risultato torna nella dashboard. Misura la rete reale del posto, non il
+  tethering.
+
+L'agente ha inoltre un **cutoff di sicurezza automatico**: se la temperatura
+della batteria supera una soglia (`--max-temp`, default 44 °C) per alcune letture
+consecutive, si ferma da solo — anche senza PC raggiungibile. È una prudenza in
+più: il telefono mantiene comunque la propria protezione termica hardware.
+
 ## Test opzionali
 
 Segnale via USB/ADB:
@@ -132,7 +158,8 @@ Segnale via USB/ADB:
 python3 adb_signal.py --loop --interval 5 --csv
 ```
 
-Throughput e bufferbloat via tethering USB (il default può usare fino a 300 MB):
+Throughput e bufferbloat via tethering USB (il default può usare fino a 300 MB;
+il tetto `--budget-mb` è approssimato alla granularità del blocco scaricato):
 
 ```bash
 python3 stresstest.py --budget-mb 100 --phase 20
@@ -173,6 +200,5 @@ esempi redatti e test sintetici.
 
 ## Licenza
 
-Scegli e aggiungi una licenza prima della pubblicazione (MIT è una scelta
-semplice per un progetto riutilizzabile). Non è stata inserita automaticamente
-perché la scelta dei diritti resta del titolare del codice.
+Distribuito sotto licenza **MIT**: vedi [`LICENSE`](LICENSE). In breve: puoi
+usare, modificare e ridistribuire il codice, senza garanzie.
