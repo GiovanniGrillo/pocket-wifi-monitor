@@ -97,6 +97,8 @@
   }
   .banner.show { display: flex; }
   .banner b { color: var(--warn); }
+  .banner.alarm { background: color-mix(in srgb, var(--bad) 14%, var(--card)); border-color: color-mix(in srgb, var(--bad) 40%, var(--line)); }
+  .banner.alarm b { color: var(--bad); }
   .banner svg { flex: none; }
 
   /* grid */
@@ -158,6 +160,8 @@
     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 9v4m0 4h.01M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0Z"/></svg>
     <div id="simBannerText"></div>
   </div>
+
+  <div class="banner" id="alertBanner"></div>
 
   <div class="hero">
     <div class="bars" id="bars"><i></i><i></i><i></i><i></i><i></i></div>
@@ -239,6 +243,10 @@ const T = {
       card_stress:"Stress test (mobile link)",k_dl:"Download",k_latload:"Latency idle→load",k_dataused:"Data used",k_when:"When",
       banner:"<b>No SIM detected.</b> The dashboard is ready: signal, operator and cell will appear as soon as a SIM is inserted and the device registers.",
       unreachable:"not reachable",device_off:"phone not connected or off",no_sim:"no SIM",connected:"connected",no_service:"no service",searching:"searching…",
+      pill_stopped:"stopped (overheat)",
+      alarm_thermal:t=>`<b>Sensor stopped — overheating.</b> Battery ${t}°C ≥ 46 °C. Wake-lock released so the phone can sleep and cool; monitoring resumes only after a restart.`,
+      alarm_stopped:"<b>Sensor stopped.</b> Remote stop command.",
+      warn_hot:t=>`<b>High temperature:</b> ${t}°C — still monitoring; it will stop if it keeps rising.`,
       qlbl:"LTE quality (RSRP/SINR)",qnone:"no reading",no_sig:"no signal data",yes:"yes",no:"no",updating:"updating every 3 s",paused:"paused",
       stop:"⏹ Stop sensor",resume_sensor:"▶ Resume sensor",run_stress:"▶ Run stress test",running:"⏳ running…",
       budget_prompt:"Data budget for the test (MB):",token_prompt:"Collector token:",confirm_stop:"Stop the sensor on the phone? It will stop within one cycle.",
@@ -254,6 +262,10 @@ const T = {
       card_stress:"Stress test (rete mobile)",k_dl:"Download",k_latload:"Latenza idle→carico",k_dataused:"Dati usati",k_when:"Quando",
       banner:"<b>Nessuna SIM rilevata.</b> La dashboard è pronta: segnale, operatore e cella compariranno appena inserisci una SIM e il device si aggancia alla rete.",
       unreachable:"non raggiungibile",device_off:"telefono non collegato o spento",no_sim:"nessuna SIM",connected:"connessa",no_service:"nessun servizio",searching:"ricerca…",
+      pill_stopped:"fermo (surriscaldamento)",
+      alarm_thermal:t=>`<b>Sensore fermato — surriscaldamento.</b> Batteria ${t}°C ≥ 46 °C. Wake-lock rilasciato per far dormire e raffreddare il telefono; riparte solo dopo un riavvio.`,
+      alarm_stopped:"<b>Sensore fermato.</b> Comando di stop remoto.",
+      warn_hot:t=>`<b>Temperatura alta:</b> ${t}°C — monitoraggio attivo; si fermerà se continua a salire.`,
       qlbl:"qualità LTE (RSRP/SINR)",qnone:"nessuna misura",no_sig:"nessun dato segnale",yes:"sì",no:"no",updating:"aggiornamento ogni 3 s",paused:"in pausa",
       stop:"⏹ Ferma sensore",resume_sensor:"▶ Riprendi sensore",run_stress:"▶ Avvia stress test",running:"⏳ in esecuzione…",
       budget_prompt:"Budget dati per il test (MB):",token_prompt:"Token del collector:",confirm_stop:"Fermare il sensore sul telefono? Si fermerà entro un ciclo.",
@@ -283,9 +295,22 @@ function applyStatic(){
 
 function setPill(cls, text){ $("statusPill").className = "pill " + cls; $("statusText").textContent = text; }
 
+function renderAlert(f){
+  const b = $("alertBanner"); const st = f.agent_status; const t = f.batt_temp ?? "?";
+  if (st === "thermal_shutdown"){ b.className = "banner alarm show"; b.innerHTML = tr().alarm_thermal(t); }
+  else if (st === "stopped"){ b.className = "banner alarm show"; b.innerHTML = tr().alarm_stopped; }
+  else if (f.batt_warn){ b.className = "banner show"; b.innerHTML = tr().warn_hot(t); }
+  else { b.className = "banner"; b.innerHTML = ""; }
+}
+
 function render(d){
-  if (!d || !d.reachable){ setPill("bad", tr().unreachable); $("sub").textContent = tr().device_off; return; }
-  const f = d.fields || {};
+  const f = (d && d.fields) || {};
+  renderAlert(f);
+  if (!d || !d.reachable){
+    setPill("bad", f.agent_status === "thermal_shutdown" ? tr().pill_stopped : tr().unreachable);
+    $("sub").textContent = f.agent_status === "thermal_shutdown" ? tr().pill_stopped : tr().device_off;
+    return;
+  }
   const conn = f.connection_status || "";
   const simReady = ["ready","valid"].includes(f.sim_status);
   const noSim = !simReady;
