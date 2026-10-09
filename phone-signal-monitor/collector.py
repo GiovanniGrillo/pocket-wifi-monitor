@@ -247,6 +247,7 @@ def _history(days: int) -> dict:
             h["trend"] = "Andamento: segnale sostanzialmente stabile nel periodo."
 
     h["conclusions"] = _conclusions(h)
+    h["last_stress"] = dict(_last_stress)
     return h
 
 
