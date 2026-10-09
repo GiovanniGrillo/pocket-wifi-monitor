@@ -148,14 +148,15 @@
     </div>
     <div class="spacer"></div>
     <span class="pill" id="statusPill"><span class="dot"></span><span id="statusText">—</span></span>
-    <a class="ghost" href="/stats" style="text-decoration:none">Statistiche ▸</a>
-    <button class="ghost" id="ctrlBtn">⏹ Ferma sensore</button>
-    <button class="ghost" id="pauseBtn">Pausa</button>
+    <a class="ghost" href="/stats" style="text-decoration:none" data-i18n="stats_link">Statistics ▸</a>
+    <button class="ghost" id="ctrlBtn">⏹ Stop</button>
+    <button class="ghost" id="langBtn">🌐 IT</button>
+    <button class="ghost" id="pauseBtn" data-i18n="pause">Pause</button>
   </header>
 
   <div class="banner" id="simBanner">
     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 9v4m0 4h.01M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0Z"/></svg>
-    <div><b>Nessuna SIM inserita.</b> La dashboard è pronta: segnale, operatore e cella si popoleranno appena inserisci una SIM e la saponetta si aggancia alla rete.</div>
+    <div id="simBannerText"></div>
   </div>
 
   <div class="hero">
@@ -165,22 +166,22 @@
       <div class="hero-net" id="heroNet">nessun servizio</div>
     </div>
     <div class="hero-right">
-      <div class="lbl">Segnale</div>
+      <div class="lbl" data-i18n="signal">Signal</div>
       <div class="val"><span id="heroBars">0</span>/5</div>
     </div>
   </div>
 
   <div class="grid">
     <div class="card">
-      <h2>Rete</h2>
-      <div class="row"><span class="k">Operatore</span><span class="v" id="f_operator">—</span></div>
-      <div class="row"><span class="k">Codice (MCC/MNC)</span><span class="v" id="f_plmn">—</span></div>
-      <div class="row"><span class="k">Tecnologia</span><span class="v" id="f_tech">—</span></div>
-      <div class="row"><span class="k">Stato</span><span class="v" id="f_conn">—</span></div>
+      <h2 data-i18n="card_network">Network</h2>
+      <div class="row"><span class="k" data-i18n="k_operator">Operator</span><span class="v" id="f_operator">—</span></div>
+      <div class="row"><span class="k" data-i18n="k_plmn">Code (MCC/MNC)</span><span class="v" id="f_plmn">—</span></div>
+      <div class="row"><span class="k" data-i18n="k_tech">Technology</span><span class="v" id="f_tech">—</span></div>
+      <div class="row"><span class="k" data-i18n="k_status">Status</span><span class="v" id="f_conn">—</span></div>
     </div>
 
     <div class="card">
-      <h2>Segnale</h2>
+      <h2 data-i18n="signal">Signal</h2>
       <div class="verdict">
         <span class="q q-none" id="f_quality">—</span>
         <span class="ql" id="f_quality_lbl"></span>
@@ -189,30 +190,31 @@
     </div>
 
     <div class="card">
-      <h2>Connettività (dato)</h2>
+      <h2 data-i18n="card_conn">Connectivity (data)</h2>
       <div class="rate">
-        <div><div class="big" id="c_http">—</div><div class="u">risposta HTTP</div></div>
-        <div><div class="big" id="c_lat">—</div><div class="u">latenza</div></div>
+        <div><div class="big" id="c_http">—</div><div class="u" data-i18n="u_http">HTTP response</div></div>
+        <div><div class="big" id="c_lat">—</div><div class="u" data-i18n="u_lat">latency</div></div>
       </div>
-      <div class="row"><span class="k">Il dato passa</span><span class="v" id="c_ok">—</span></div>
-      <div class="row"><span class="k">Stato link</span><span class="v" id="c_link">—</span></div>
-      <div class="row"><span class="k">Ultimo aggiornamento</span><span class="v" id="c_age">—</span></div>
+      <div class="row"><span class="k" data-i18n="k_dataok">Data works</span><span class="v" id="c_ok">—</span></div>
+      <div class="row"><span class="k" data-i18n="k_link">Link state</span><span class="v" id="c_link">—</span></div>
+      <div class="row"><span class="k" data-i18n="k_updated">Last update</span><span class="v" id="c_age">—</span></div>
     </div>
 
     <div class="card">
-      <h2>Dispositivo</h2>
-      <div class="row"><span class="k">Batteria</span><span class="v" id="f_batt">—</span></div>
-      <div class="row"><span class="k">Temperatura</span><span class="v" id="f_temp">—</span></div>
-      <div class="row"><span class="k">SIM</span><span class="v" id="f_sim">—</span></div>
+      <h2 data-i18n="card_device">Device</h2>
+      <div class="row"><span class="k" data-i18n="k_batt">Battery</span><span class="v" id="f_batt">—</span></div>
+      <div class="row"><span class="k" data-i18n="k_temp">Temperature</span><span class="v" id="f_temp">—</span></div>
+      <div class="row"><span class="k" data-i18n="k_sim">SIM</span><span class="v" id="f_sim">—</span></div>
     </div>
 
     <div class="card">
-      <h2>Stress test (rete mobile)</h2>
-      <div class="row"><span class="k">Download</span><span class="v" id="st_mbps">—</span></div>
-      <div class="row"><span class="k">Latenza idle→carico</span><span class="v" id="st_lat">—</span></div>
-      <div class="row"><span class="k">Dati usati</span><span class="v" id="st_data">—</span></div>
-      <div class="row"><span class="k">Quando</span><span class="v" id="st_when">—</span></div>
-      <button class="ghost" id="stressBtn" style="margin-top:12px;width:100%;justify-content:center">▶ Avvia stress test</button>
+      <h2 data-i18n="card_stress">Stress test (mobile link)</h2>
+      <div class="verdict"><span class="q q-none" id="st_verdict">—</span><span class="ql" id="st_verdict_lbl"></span></div>
+      <div class="row"><span class="k" data-i18n="k_dl">Download</span><span class="v" id="st_mbps">—</span></div>
+      <div class="row"><span class="k" data-i18n="k_latload">Latency idle→load</span><span class="v" id="st_lat">—</span></div>
+      <div class="row"><span class="k" data-i18n="k_dataused">Data used</span><span class="v" id="st_data">—</span></div>
+      <div class="row"><span class="k" data-i18n="k_when">When</span><span class="v" id="st_when">—</span></div>
+      <button class="ghost" id="stressBtn" style="margin-top:12px;width:100%;justify-content:center">▶ Run stress test</button>
       <div id="st_status" style="font-size:11px;color:var(--faint);margin-top:7px;min-height:14px"></div>
     </div>
   </div>
@@ -226,209 +228,208 @@
 const $ = id => document.getElementById(id);
 let paused = false, timer = null;
 const REFRESH = 3000;
-
 const dash = v => (v === undefined || v === null || v === "") ? null : v;
 
+let lang = localStorage.getItem("pw_lang") || "en";
+const T = {
+  en:{stats_link:"Statistics ▸",pause:"Pause",resume:"Resume",signal:"Signal",
+      card_network:"Network",k_operator:"Operator",k_plmn:"Code (MCC/MNC)",k_tech:"Technology",k_status:"Status",
+      card_conn:"Connectivity (data)",u_http:"HTTP response",u_lat:"latency",k_dataok:"Data works",k_link:"Link state",k_updated:"Last update",
+      card_device:"Device",k_batt:"Battery",k_temp:"Temperature",k_sim:"SIM",
+      card_stress:"Stress test (mobile link)",k_dl:"Download",k_latload:"Latency idle→load",k_dataused:"Data used",k_when:"When",
+      banner:"<b>No SIM detected.</b> The dashboard is ready: signal, operator and cell will appear as soon as a SIM is inserted and the device registers.",
+      unreachable:"not reachable",device_off:"phone not connected or off",no_sim:"no SIM",connected:"connected",no_service:"no service",searching:"searching…",
+      qlbl:"LTE quality (RSRP/SINR)",qnone:"no reading",no_sig:"no signal data",yes:"yes",no:"no",updating:"updating every 3 s",paused:"paused",
+      stop:"⏹ Stop sensor",resume_sensor:"▶ Resume sensor",run_stress:"▶ Run stress test",running:"⏳ running…",
+      budget_prompt:"Data budget for the test (MB):",token_prompt:"Collector token:",confirm_stop:"Stop the sensor on the phone? It will stop within one cycle.",
+      run_a_test:"run a test",under_load:"under load",ago_s:n=>`${n} s ago`,ago_m:n=>`${n} min ago`,
+      pending:(s)=>`requested (${s.streams} streams, ${s.secs}s, max ${s.budget_mb} MB) — starts at the phone's next check`,
+      q:{excellent:"excellent",good:"good",fair:"fair",poor:"poor",very_poor:"very poor"},
+      sim:{ready:"ready",valid:"valid",absent:"absent"},
+      sv:{good:"good",borderline:"borderline",bad:"weak"}},
+  it:{stats_link:"Statistiche ▸",pause:"Pausa",resume:"Riprendi",signal:"Segnale",
+      card_network:"Rete",k_operator:"Operatore",k_plmn:"Codice (MCC/MNC)",k_tech:"Tecnologia",k_status:"Stato",
+      card_conn:"Connettività (dato)",u_http:"risposta HTTP",u_lat:"latenza",k_dataok:"Il dato passa",k_link:"Stato link",k_updated:"Ultimo aggiornamento",
+      card_device:"Dispositivo",k_batt:"Batteria",k_temp:"Temperatura",k_sim:"SIM",
+      card_stress:"Stress test (rete mobile)",k_dl:"Download",k_latload:"Latenza idle→carico",k_dataused:"Dati usati",k_when:"Quando",
+      banner:"<b>Nessuna SIM rilevata.</b> La dashboard è pronta: segnale, operatore e cella compariranno appena inserisci una SIM e il device si aggancia alla rete.",
+      unreachable:"non raggiungibile",device_off:"telefono non collegato o spento",no_sim:"nessuna SIM",connected:"connessa",no_service:"nessun servizio",searching:"ricerca…",
+      qlbl:"qualità LTE (RSRP/SINR)",qnone:"nessuna misura",no_sig:"nessun dato segnale",yes:"sì",no:"no",updating:"aggiornamento ogni 3 s",paused:"in pausa",
+      stop:"⏹ Ferma sensore",resume_sensor:"▶ Riprendi sensore",run_stress:"▶ Avvia stress test",running:"⏳ in esecuzione…",
+      budget_prompt:"Budget dati per il test (MB):",token_prompt:"Token del collector:",confirm_stop:"Fermare il sensore sul telefono? Si fermerà entro un ciclo.",
+      run_a_test:"lancia un test",under_load:"sotto carico",ago_s:n=>`${n} s fa`,ago_m:n=>`${n} min fa`,
+      pending:(s)=>`richiesto (${s.streams} flussi, ${s.secs}s, max ${s.budget_mb} MB) — parte al prossimo check del telefono`,
+      q:{excellent:"eccellente",good:"buono",fair:"discreto",poor:"scarso",very_poor:"pessimo"},
+      sim:{ready:"pronta",valid:"valida",absent:"assente"},
+      sv:{good:"buono",borderline:"al limite",bad:"debole"}},
+};
+const tr = () => T[lang];
+const L = (en, it) => lang === "it" ? it : en;
 
-function setPill(cls, text) {
-  const p = $("statusPill");
-  p.className = "pill " + cls;
-  $("statusText").textContent = text;
+// usage profile (shared with the stats page) tunes the stress verdict
+const PROFILES = {family:{mbps:15,latSoft:120,latHard:250},uhd4k:{mbps:30,latSoft:150,latHard:300},
+  work:{mbps:8,latSoft:60,latHard:120},basic:{mbps:4,latSoft:200,latHard:400},custom:{mbps:10,latSoft:120,latHard:250}};
+function profileTarget(){ const id=localStorage.getItem("pw_profile")||"family"; return PROFILES[id]||PROFILES.family; }
+
+let lastData = null, lastCtrl = null;
+
+function applyStatic(){
+  document.documentElement.lang = lang;
+  document.querySelectorAll("[data-i18n]").forEach(el=>{ const k=el.getAttribute("data-i18n"); if(tr()[k]!=null) el.textContent=tr()[k]; });
+  $("langBtn").textContent = lang === "it" ? "🌐 EN" : "🌐 IT";
+  $("simBannerText").innerHTML = tr().banner;
+  $("pauseBtn").textContent = paused ? tr().resume : tr().pause;
 }
 
-function render(d) {
-  if (!d.reachable) {
-    setPill("bad", "non raggiungibile");
-    $("sub").textContent = "Saponetta non collegata o spenta";
-    return;
-  }
+function setPill(cls, text){ $("statusPill").className = "pill " + cls; $("statusText").textContent = text; }
+
+function render(d){
+  if (!d || !d.reachable){ setPill("bad", tr().unreachable); $("sub").textContent = tr().device_off; return; }
   const f = d.fields || {};
   const conn = f.connection_status || "";
-  const simReady = ["ready", "valid"].includes(f.sim_status);
+  const simReady = ["ready","valid"].includes(f.sim_status);
   const noSim = !simReady;
-
-  // status pill
-  if (noSim) setPill("warn", "nessuna SIM");
-  else if (conn === "connected") setPill("ok", "connessa");
-  else if (f.network_type_code === "0" || f.network_type === "no_service") setPill("warn", "nessun servizio");
+  if (noSim) setPill("warn", tr().no_sim);
+  else if (conn === "connected") setPill("ok", tr().connected);
+  else if (f.network_type_code === "0" || f.network_type === "no_service") setPill("warn", tr().no_service);
   else setPill("warn", f.connection_status || "—");
 
   $("sub").textContent = d.label || "pocket-wifi";
   $("simBanner").classList.toggle("show", noSim);
 
-  // hero
   const op = dash(f.operator);
-  $("heroOp").textContent = op || (sim === "255" ? "—" : "ricerca…");
+  $("heroOp").textContent = op || (noSim ? "—" : tr().searching);
   $("f_operator").textContent = op || "—";
   const tech = dash(f.network_type);
-  $("heroNet").textContent = tech ? tech : "nessun servizio";
+  $("heroNet").textContent = tech || tr().no_service;
   $("f_tech").textContent = tech || "—";
 
   const bars = Math.max(0, Math.min(5, parseInt(f.signal_bars || "0", 10) || 0));
   $("heroBars").textContent = bars;
-  document.querySelectorAll("#bars i").forEach((el, i) => {
-    el.classList.toggle("on", i < bars);
-    el.style.height = (22 + i*8) + "px";
-  });
+  document.querySelectorAll("#bars i").forEach((el,i)=>{ el.classList.toggle("on", i<bars); el.style.height = (22+i*8)+"px"; });
 
-  // network
   $("f_plmn").textContent = dash(f.operator_numeric) || "—";
-  $("f_conn").textContent = f.connection_status || "—";
+  $("f_conn").textContent = conn || "—";
 
-  // signal quality verdict (LTE only; empty for 3G Huawei)
-  const QMAP = {
-    excellent: "eccellente", good: "buono", fair: "discreto",
-    poor: "scarso", very_poor: "pessimo",
-  };
-  const qv = $("f_quality");
-  const q = dash(f.sig_quality);
+  const qv = $("f_quality"); const q = dash(f.sig_quality);
   qv.className = "q q-" + (q || "none");
-  qv.textContent = q ? (QMAP[q] || q) : "—";
-  $("f_quality_lbl").textContent = q ? "qualità LTE (RSRP/SINR)" : "nessuna misura";
+  qv.textContent = q ? (tr().q[q] || q) : "—";
+  $("f_quality_lbl").textContent = q ? tr().qlbl : tr().qnone;
 
-  // signal rows: built from whatever the device actually reports. LTE fields
-  // (rsrp/rsrq/sinr) for the Alcatel, 3G fields (rscp/ecio/sc) for the Huawei;
-  // empty ones are skipped so each device shows a clean, relevant panel.
   const SIG_SPEC = [
-    ["sig_band", "Banda", ""], ["sig_earfcn", "EARFCN", ""],
-    ["sig_rsrp", "RSRP", " dBm"], ["sig_rsrq", "RSRQ", " dB"],
-    ["sig_sinr", "SINR", " dB"], ["sig_rssi", "RSSI", " dBm"],
-    ["sig_rscp", "RSCP (3G)", " dBm"], ["sig_ecio", "Ec/Io (3G)", " dB"],
-    ["sig_cell_id", "Cell ID", ""], ["sig_enbid", "eNB ID", ""],
-    ["sig_sc", "Scrambling code", ""],
+    ["sig_band","Band",""],["sig_earfcn","EARFCN",""],["sig_rsrp","RSRP"," dBm"],["sig_rsrq","RSRQ"," dB"],
+    ["sig_sinr","SINR"," dB"],["sig_rssi","RSSI"," dBm"],["sig_rscp","RSCP (3G)"," dBm"],["sig_ecio","Ec/Io (3G)"," dB"],
+    ["sig_cell_id","Cell ID",""],["sig_enbid","eNB ID",""],["sig_sc","Scrambling code",""],
   ];
-  const html = SIG_SPEC.map(([key, label, unit]) => {
-    const v = dash(f[key]);
-    if (v === null) return "";
-    const shown = /[a-zA-Z]/.test(String(v)) ? v : v + unit;
-    return `<div class="row"><span class="k">${label}</span><span class="v">${shown}</span></div>`;
-  }).join("");
-  $("sigRows").innerHTML = html || `<div class="row"><span class="k v muted">nessun dato segnale</span></div>`;
+  const rows = SIG_SPEC.map(([key,label,unit])=>{ const v=dash(f[key]); if(v===null) return "";
+    const shown = /[a-zA-Z]/.test(String(v)) ? v : v+unit;
+    return `<div class="row"><span class="k">${label}</span><span class="v">${shown}</span></div>`; }).join("");
+  $("sigRows").innerHTML = rows || `<div class="row"><span class="k v muted">${tr().no_sig}</span></div>`;
 
-  // connettività (dato) — ciò che il telefono misura davvero in continuo
   const code = dash(f.http_code);
   const cHttp = $("c_http");
   cHttp.textContent = code != null ? code : (f.http_ok === false ? "FAIL" : "—");
-  cHttp.style.color = (code == 204 || code == 200) ? "var(--accent)"
-    : (f.http_ok === false ? "var(--bad)" : "");
-  const ms = dash(f.http_ms);
-  const cLat = $("c_lat");
-  cLat.textContent = ms != null ? ms + " ms" : "—";
-  cLat.style.color = ms == null ? "" : (ms < 150 ? "var(--accent)" : ms < 400 ? "var(--warn)" : "var(--bad)");
-  $("c_ok").textContent = f.http_ok === true ? "sì" : (f.http_ok === false ? "no" : "—");
-  $("c_link").textContent = f.connection_status === "connected" ? "connesso"
-    : (dash(f.connection_status) || "—");
-  $("c_age").textContent = (d.age_s != null)
-    ? (d.age_s < 90 ? d.age_s + " s fa" : Math.round(d.age_s / 60) + " min fa") : "—";
+  cHttp.style.color = (code==204||code==200) ? "var(--accent)" : (f.http_ok===false ? "var(--bad)" : "");
+  const ms = dash(f.http_ms); const cLat = $("c_lat");
+  cLat.textContent = ms != null ? ms+" ms" : "—";
+  cLat.style.color = ms==null ? "" : (ms<150?"var(--accent)":ms<400?"var(--warn)":"var(--bad)");
+  $("c_ok").textContent = f.http_ok===true ? tr().yes : (f.http_ok===false ? tr().no : "—");
+  $("c_link").textContent = conn==="connected" ? tr().connected : (dash(conn) || "—");
+  $("c_age").textContent = (d.age_s!=null) ? (d.age_s<90 ? tr().ago_s(d.age_s) : tr().ago_m(Math.round(d.age_s/60))) : "—";
 
-  // device
   const batt = dash(f.batt_pct) ?? dash(f.battery_percent);
   const plugged = f.batt_plugged || f.battery_charging === "1";
-  $("f_batt").textContent = batt != null ? batt + "%" + (plugged ? " ⚡" : "") : "—";
-  const tp = dash(f.batt_temp);
-  const tEl = $("f_temp");
-  tEl.textContent = tp != null ? tp + " °C" : "—";
-  tEl.style.color = (tp != null && tp >= 44) ? "var(--bad)" : (tp != null && tp >= 40) ? "var(--warn)" : "";
-  const simMap = {ready: "pronta", valid: "valida", absent: "assente"};
-  $("f_sim").textContent = simMap[f.sim_status] || dash(f.sim_status) || "—";
+  $("f_batt").textContent = batt != null ? batt+"%"+(plugged?" ⚡":"") : "—";
+  const tp = dash(f.batt_temp); const tEl = $("f_temp");
+  tEl.textContent = tp != null ? tp+" °C" : "—";
+  tEl.style.color = (tp!=null && tp>=44) ? "var(--bad)" : (tp!=null && tp>=40) ? "var(--warn)" : "";
+  $("f_sim").textContent = tr().sim[f.sim_status] || dash(f.sim_status) || "—";
 }
 
-async function tick() {
-  try {
-    const r = await privateFetch("/data", {cache: "no-store"});
-    render(await r.json());
-  } catch (e) {
-    setPill("bad", "backend offline");
-  }
+async function tick(){
+  try { const r = await privateFetch("/data", {cache:"no-store"}); lastData = await r.json(); render(lastData); }
+  catch (e) { setPill("bad", "backend offline"); }
 }
-function loop() { if (!paused) tick(); timer = setTimeout(loop, REFRESH); }
+function loop(){ if(!paused) tick(); timer = setTimeout(loop, REFRESH); }
 
-$("pauseBtn").addEventListener("click", () => {
+$("pauseBtn").addEventListener("click", ()=>{
   paused = !paused;
-  $("pauseBtn").textContent = paused ? "Riprendi" : "Pausa";
+  $("pauseBtn").textContent = paused ? tr().resume : tr().pause;
   $("app").classList.toggle("paused", paused);
-  $("footText").textContent = paused ? "in pausa" : "aggiornamento ogni 3 s";
+  $("footText").textContent = paused ? tr().paused : tr().updating;
   if (!paused) tick();
 });
 
-// --- remote stop/resume of the phone sensor ---
+// --- remote stop/resume + stress test ---
 let ctrlStopped = false;
-async function refreshCtrl() {
-  try {
-    const s = await (await privateFetch("/control", {cache:"no-store"})).json();
-    ctrlStopped = !!s.stop;
-    const b = $("ctrlBtn");
-    b.textContent = ctrlStopped ? "▶ Riprendi sensore" : "⏹ Ferma sensore";
-    b.classList.toggle("danger", !ctrlStopped);
-    b.classList.toggle("on", ctrlStopped);
-    renderStress(s);
-  } catch (e) {}
+function renderCtrlBtn(){ const b=$("ctrlBtn"); b.textContent = ctrlStopped ? tr().resume_sensor : tr().stop;
+  b.classList.toggle("danger", !ctrlStopped); b.classList.toggle("on", ctrlStopped); }
+
+async function refreshCtrl(){
+  try { lastCtrl = await (await privateFetch("/control", {cache:"no-store"})).json(); ctrlStopped = !!lastCtrl.stop; renderCtrlBtn(); renderStress(lastCtrl); }
+  catch (e) {}
 }
 
-function renderStress(s) {
+function stressVerdict(r){
+  const dl = r.dl_mbps; if (dl==null) return {lvl:"none", word:"—", lbl:tr().run_a_test};
+  const p = profileTarget();
+  const latAdd = (r.lat_idle_ms!=null && r.lat_load_ms!=null) ? Math.round(r.lat_load_ms - r.lat_idle_ms) : null;
+  const order=["bad","borderline","good"];
+  const thr = dl>=p.mbps ? "good" : dl>=0.6*p.mbps ? "borderline" : "bad";
+  let buf = null; if (latAdd!=null) buf = latAdd<=p.latSoft ? "good" : latAdd<=p.latHard ? "borderline" : "bad";
+  const lvl = [thr,buf].filter(Boolean).sort((a,b)=>order.indexOf(a)-order.indexOf(b))[0];
+  const lbl = `${dl} Mbps` + (latAdd!=null ? ` · +${latAdd} ms ${tr().under_load}` : "");
+  return {lvl, word: tr().sv[lvl], lbl};
+}
+function renderStress(s){
   const r = s.last_stress || {};
-  $("st_mbps").textContent = r.dl_mbps != null ? r.dl_mbps + " Mbps" : "—";
-  $("st_lat").textContent = (r.lat_idle_ms != null || r.lat_load_ms != null)
-    ? `${r.lat_idle_ms ?? "?"} → ${r.lat_load_ms ?? "?"} ms` : "—";
-  $("st_data").textContent = r.data_mb != null ? r.data_mb + " MB" : "—";
-  $("st_when").textContent = r.timestamp ? new Date(r.timestamp).toLocaleString('it') : "—";
-  const pending = !!s.stress;
-  const b = $("stressBtn");
-  b.disabled = pending;
-  b.textContent = pending ? "⏳ in esecuzione…" : "▶ Avvia stress test";
-  $("st_status").textContent = pending
-    ? `richiesto (${s.stress.streams} flussi, ${s.stress.secs}s, max ${s.stress.budget_mb} MB) — parte al prossimo check del telefono`
-    : "";
+  const v = stressVerdict(r);
+  const qmap = {good:"q-good", borderline:"q-fair", bad:"q-poor", none:"q-none"};
+  const sv = $("st_verdict"); sv.className = "q " + qmap[v.lvl]; sv.textContent = v.word;
+  $("st_verdict_lbl").textContent = v.lbl;
+  $("st_mbps").textContent = r.dl_mbps != null ? r.dl_mbps+" Mbps" : "—";
+  $("st_lat").textContent = (r.lat_idle_ms!=null || r.lat_load_ms!=null) ? `${r.lat_idle_ms ?? "?"} → ${r.lat_load_ms ?? "?"} ms` : "—";
+  $("st_data").textContent = r.data_mb != null ? r.data_mb+" MB" : "—";
+  $("st_when").textContent = r.timestamp ? new Date(r.timestamp).toLocaleString(lang) : "—";
+  const pending = !!s.stress; const b = $("stressBtn");
+  b.disabled = pending; b.textContent = pending ? tr().running : tr().run_stress;
+  $("st_status").textContent = pending ? tr().pending(s.stress) : "";
 }
 
-$("stressBtn").addEventListener("click", async () => {
-  const mb = parseInt(prompt("Budget dati per il test (MB):", "50"), 10);
-  if (!mb || mb < 1) return;
-  const headers = {"Content-Type":"application/json"};
-  const tok = localStorage.getItem("pw_token");
-  if (tok) headers["X-Token"] = tok;
-  const r = await privateFetch("/control", {method:"POST", headers,
-    body: JSON.stringify({stress:{budget_mb: mb, streams: 3, secs: 15}})});
-  if (r.status === 403) { const t = prompt("Token del collector:"); if (t){localStorage.setItem("pw_token",t);} }
-  refreshCtrl();
-});
-async function privateFetch(path, options = {}) {
+async function privateFetch(path, options = {}){
   const headers = new Headers(options.headers || {});
   const tok = localStorage.getItem("pw_token");
   if (tok) headers.set("X-Token", tok);
   let response = await fetch(path, {...options, headers});
-  if (response.status === 403) {
-    const entered = prompt("Token del collector:");
-    if (entered) {
-      localStorage.setItem("pw_token", entered);
-      headers.set("X-Token", entered);
-      response = await fetch(path, {...options, headers});
-    }
+  if (response.status === 403){
+    const entered = prompt(tr().token_prompt);
+    if (entered){ localStorage.setItem("pw_token", entered); headers.set("X-Token", entered); response = await fetch(path, {...options, headers}); }
   }
   return response;
 }
-async function setStop(v) {
-  const headers = {"Content-Type":"application/json"};
-  const tok = localStorage.getItem("pw_token");
-  if (tok) headers["X-Token"] = tok;
+async function setStop(v){
   try {
-    const r = await privateFetch("/control", {method:"POST", headers, body: JSON.stringify({stop:v})});
-    if (r.status === 403) {
-      const t = prompt("Token del collector (serve per comandare da remoto):");
-      if (t) { localStorage.setItem("pw_token", t); return setStop(v); }
-      return;
-    }
+    await privateFetch("/control", {method:"POST", headers:{"Content-Type":"application/json"}, body: JSON.stringify({stop:v})});
   } catch (e) {}
   refreshCtrl();
 }
-$("ctrlBtn").addEventListener("click", () => {
-  if (!ctrlStopped && !confirm("Fermare il sensore sul telefono? Si fermerà entro un ciclo.")) return;
-  setStop(!ctrlStopped);
+$("ctrlBtn").addEventListener("click", ()=>{ if(!ctrlStopped && !confirm(tr().confirm_stop)) return; setStop(!ctrlStopped); });
+$("stressBtn").addEventListener("click", async ()=>{
+  const mb = parseInt(prompt(tr().budget_prompt, "50"), 10);
+  if (!mb || mb < 1) return;
+  await privateFetch("/control", {method:"POST", headers:{"Content-Type":"application/json"},
+    body: JSON.stringify({stress:{budget_mb: mb, streams: 3, secs: 15}})});
+  refreshCtrl();
+});
+$("langBtn").addEventListener("click", ()=>{
+  lang = lang === "it" ? "en" : "it"; localStorage.setItem("pw_lang", lang);
+  applyStatic(); if(lastData) render(lastData); if(lastCtrl){ renderCtrlBtn(); renderStress(lastCtrl); }
+  $("footText").textContent = paused ? tr().paused : tr().updating;
 });
 
-tick();
-loop();
-refreshCtrl();
+applyStatic();
+$("footText").textContent = tr().updating;
+tick(); loop(); refreshCtrl();
 setInterval(refreshCtrl, 5000);
 </script>
 </body>
