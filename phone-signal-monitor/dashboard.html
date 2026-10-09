@@ -177,8 +177,6 @@
       <div class="row"><span class="k">Codice (MCC/MNC)</span><span class="v" id="f_plmn">—</span></div>
       <div class="row"><span class="k">Tecnologia</span><span class="v" id="f_tech">—</span></div>
       <div class="row"><span class="k">Stato</span><span class="v" id="f_conn">—</span></div>
-      <div class="row"><span class="k">Roaming</span><span class="v" id="f_roam">—</span></div>
-      <div class="row"><span class="k">IP WAN</span><span class="v" id="f_wan">—</span></div>
     </div>
 
     <div class="card">
@@ -191,14 +189,14 @@
     </div>
 
     <div class="card">
-      <h2>Traffico</h2>
+      <h2>Connettività (dato)</h2>
       <div class="rate">
-        <div><div class="big"><span class="arrow">↓</span> <span id="f_dr">0</span></div><div class="u" id="f_dru">kB/s</div></div>
-        <div><div class="big"><span class="arrow up">↑</span> <span id="f_ur">0</span></div><div class="u" id="f_uru">kB/s</div></div>
+        <div><div class="big" id="c_http">—</div><div class="u">risposta HTTP</div></div>
+        <div><div class="big" id="c_lat">—</div><div class="u">latenza</div></div>
       </div>
-      <div class="row"><span class="k">Sessione ↓/↑</span><span class="v" id="f_sess">—</span></div>
-      <div class="row"><span class="k">Totale ↓/↑</span><span class="v" id="f_tot">—</span></div>
-      <div class="row"><span class="k">Durata sessione</span><span class="v" id="f_dur">—</span></div>
+      <div class="row"><span class="k">Il dato passa</span><span class="v" id="c_ok">—</span></div>
+      <div class="row"><span class="k">Stato link</span><span class="v" id="c_link">—</span></div>
+      <div class="row"><span class="k">Ultimo aggiornamento</span><span class="v" id="c_age">—</span></div>
     </div>
 
     <div class="card">
@@ -206,6 +204,16 @@
       <div class="row"><span class="k">Batteria</span><span class="v" id="f_batt">—</span></div>
       <div class="row"><span class="k">Temperatura</span><span class="v" id="f_temp">—</span></div>
       <div class="row"><span class="k">SIM</span><span class="v" id="f_sim">—</span></div>
+    </div>
+
+    <div class="card">
+      <h2>Stress test (rete mobile)</h2>
+      <div class="row"><span class="k">Download</span><span class="v" id="st_mbps">—</span></div>
+      <div class="row"><span class="k">Latenza idle→carico</span><span class="v" id="st_lat">—</span></div>
+      <div class="row"><span class="k">Dati usati</span><span class="v" id="st_data">—</span></div>
+      <div class="row"><span class="k">Quando</span><span class="v" id="st_when">—</span></div>
+      <button class="ghost" id="stressBtn" style="margin-top:12px;width:100%;justify-content:center">▶ Avvia stress test</button>
+      <div id="st_status" style="font-size:11px;color:var(--faint);margin-top:7px;min-height:14px"></div>
     </div>
   </div>
 
@@ -221,22 +229,6 @@ const REFRESH = 3000;
 
 const dash = v => (v === undefined || v === null || v === "") ? null : v;
 
-function fmtBytes(n) {
-  n = Number(n); if (!isFinite(n) || n < 0) return "—";
-  const u = ["B","kB","MB","GB","TB"]; let i = 0;
-  while (n >= 1024 && i < u.length-1) { n /= 1024; i++; }
-  return (n < 10 && i > 0 ? n.toFixed(1) : Math.round(n)) + " " + u[i];
-}
-function fmtRate(bps) {
-  let n = Number(bps); if (!isFinite(n)) n = 0;
-  if (n >= 1024*1024) return [(n/1048576).toFixed(1), "MB/s"];
-  return [Math.round(n/1024).toString(), "kB/s"];
-}
-function fmtDur(s) {
-  s = Number(s); if (!isFinite(s) || s <= 0) return "—";
-  const h = Math.floor(s/3600), m = Math.floor(s%3600/60), x = s%60;
-  return (h?h+"h ":"") + (m?m+"m ":"") + x + "s";
-}
 
 function setPill(cls, text) {
   const p = $("statusPill");
@@ -282,8 +274,6 @@ function render(d) {
   // network
   $("f_plmn").textContent = dash(f.operator_numeric) || "—";
   $("f_conn").textContent = f.connection_status || "—";
-  $("f_roam").textContent = f.roaming === "1" ? "sì" : (f.roaming === "0" ? "no" : "—");
-  $("f_wan").textContent = dash(f.wan_ip) || "—";
 
   // signal quality verdict (LTE only; empty for 3G Huawei)
   const QMAP = {
@@ -315,16 +305,21 @@ function render(d) {
   }).join("");
   $("sigRows").innerHTML = html || `<div class="row"><span class="k v muted">nessun dato segnale</span></div>`;
 
-  // traffic
-  const [dr, dru] = fmtRate(f.cur_download_rate_Bps);
-  const [ur, uru] = fmtRate(f.cur_upload_rate_Bps);
-  $("f_dr").textContent = dr; $("f_dru").textContent = dru;
-  $("f_ur").textContent = ur; $("f_uru").textContent = uru;
-  $("f_sess").textContent = (f.session_download_bytes !== undefined)
-    ? fmtBytes(f.session_download_bytes) + " / " + fmtBytes(f.session_upload_bytes) : "—";
-  $("f_tot").textContent = (f.total_download_bytes !== undefined)
-    ? fmtBytes(f.total_download_bytes) + " / " + fmtBytes(f.total_upload_bytes) : "—";
-  $("f_dur").textContent = fmtDur(f.session_connect_time_s);
+  // connettività (dato) — ciò che il telefono misura davvero in continuo
+  const code = dash(f.http_code);
+  const cHttp = $("c_http");
+  cHttp.textContent = code != null ? code : (f.http_ok === false ? "FAIL" : "—");
+  cHttp.style.color = (code == 204 || code == 200) ? "var(--accent)"
+    : (f.http_ok === false ? "var(--bad)" : "");
+  const ms = dash(f.http_ms);
+  const cLat = $("c_lat");
+  cLat.textContent = ms != null ? ms + " ms" : "—";
+  cLat.style.color = ms == null ? "" : (ms < 150 ? "var(--accent)" : ms < 400 ? "var(--warn)" : "var(--bad)");
+  $("c_ok").textContent = f.http_ok === true ? "sì" : (f.http_ok === false ? "no" : "—");
+  $("c_link").textContent = f.connection_status === "connected" ? "connesso"
+    : (dash(f.connection_status) || "—");
+  $("c_age").textContent = (d.age_s != null)
+    ? (d.age_s < 90 ? d.age_s + " s fa" : Math.round(d.age_s / 60) + " min fa") : "—";
 
   // device
   const batt = dash(f.batt_pct) ?? dash(f.battery_percent);
@@ -366,8 +361,37 @@ async function refreshCtrl() {
     b.textContent = ctrlStopped ? "▶ Riprendi sensore" : "⏹ Ferma sensore";
     b.classList.toggle("danger", !ctrlStopped);
     b.classList.toggle("on", ctrlStopped);
+    renderStress(s);
   } catch (e) {}
 }
+
+function renderStress(s) {
+  const r = s.last_stress || {};
+  $("st_mbps").textContent = r.dl_mbps != null ? r.dl_mbps + " Mbps" : "—";
+  $("st_lat").textContent = (r.lat_idle_ms != null || r.lat_load_ms != null)
+    ? `${r.lat_idle_ms ?? "?"} → ${r.lat_load_ms ?? "?"} ms` : "—";
+  $("st_data").textContent = r.data_mb != null ? r.data_mb + " MB" : "—";
+  $("st_when").textContent = r.timestamp ? new Date(r.timestamp).toLocaleString('it') : "—";
+  const pending = !!s.stress;
+  const b = $("stressBtn");
+  b.disabled = pending;
+  b.textContent = pending ? "⏳ in esecuzione…" : "▶ Avvia stress test";
+  $("st_status").textContent = pending
+    ? `richiesto (${s.stress.streams} flussi, ${s.stress.secs}s, max ${s.stress.budget_mb} MB) — parte al prossimo check del telefono`
+    : "";
+}
+
+$("stressBtn").addEventListener("click", async () => {
+  const mb = parseInt(prompt("Budget dati per il test (MB):", "50"), 10);
+  if (!mb || mb < 1) return;
+  const headers = {"Content-Type":"application/json"};
+  const tok = localStorage.getItem("pw_token");
+  if (tok) headers["X-Token"] = tok;
+  const r = await privateFetch("/control", {method:"POST", headers,
+    body: JSON.stringify({stress:{budget_mb: mb, streams: 3, secs: 15}})});
+  if (r.status === 403) { const t = prompt("Token del collector:"); if (t){localStorage.setItem("pw_token",t);} }
+  refreshCtrl();
+});
 async function privateFetch(path, options = {}) {
   const headers = new Headers(options.headers || {});
   const tok = localStorage.getItem("pw_token");
