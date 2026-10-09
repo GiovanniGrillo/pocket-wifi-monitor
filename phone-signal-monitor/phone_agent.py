@@ -264,6 +264,42 @@ def set_wakelock(on: bool = True):
         pass
 
 
+def _have_root() -> bool:
+    try:
+        r = subprocess.run(["su", "-c", "id", "-u"], capture_output=True, text=True, timeout=6)
+        return r.returncode == 0 and r.stdout.strip() == "0"
+    except (subprocess.SubprocessError, FileNotFoundError):
+        return False
+
+
+def thermal_shutdown(args, temp):
+    """Hard thermal limit reached. Alert the collector, release the wake-lock so
+    the phone can sleep and cool, and actually power it off IF root is available.
+    A non-root Android cannot power itself off from an app, so there the device's
+    own hardware thermal protection stays the last line of defence."""
+    rooted = _have_root()
+    alert = {"timestamp": datetime.now(timezone.utc).isoformat(), "source": args.name,
+             "agent_status": "thermal_shutdown",
+             "stop_reason": f"batt {temp} C >= {args.shutdown_temp} C",
+             "root_poweroff": rooted}
+    alert.update(read_battery())
+    append_outbox(alert)
+    flush_outbox(args.collector, args.token)   # deliver the alarm BEFORE acting
+    set_wakelock(False)                         # let the phone idle down and cool
+    if rooted:
+        for cmd in (["su", "-c", "svc power shutdown"], ["su", "-c", "reboot -p"]):
+            try:
+                subprocess.run(cmd, capture_output=True, timeout=10)
+                break
+            except (subprocess.SubprocessError, FileNotFoundError):
+                continue
+        print(f">> EMERGENZA TERMICA {temp}°C ≥ {args.shutdown_temp}: spegnimento del telefono (root).")
+    else:
+        print(f">> EMERGENZA TERMICA {temp}°C ≥ {args.shutdown_temp}: niente root, non posso spegnere.")
+        print("   Agente fermato e wake-lock rilasciato → il telefono va in sonno e si raffredda.")
+        print("   La protezione termica hardware di Android gestisce le temperature critiche.")
+
+
 def read_battery() -> dict:
     """Battery % / temperature / health via Termux:API (best-effort)."""
     d = _run_json(["termux-battery-status"]) or {}
@@ -372,9 +408,11 @@ def main():
                     help="label for this sensor shown on the dashboard")
     ap.add_argument("--once", action="store_true")
     ap.add_argument("--max-temp", type=float, default=44.0,
-                    help="°C batteria oltre cui fermarsi per sicurezza (default 44)")
+                    help="°C batteria: soglia di AVVISO (continua a monitorare) (default 44)")
+    ap.add_argument("--shutdown-temp", type=float, default=46.0,
+                    help="°C batteria: soglia di EMERGENZA → spegnimento se root, altrimenti stop+sonno (default 46)")
     ap.add_argument("--temp-strikes", type=int, default=3,
-                    help="letture consecutive sopra soglia prima di fermarsi (default 3)")
+                    help="letture consecutive sopra la soglia di emergenza prima di agire (default 3)")
     args = ap.parse_args()
 
     print(f"phone_agent -> {args.collector} | ogni {args.interval}s | name={args.name}")
@@ -384,14 +422,14 @@ def main():
         print("  Telefono/Posizione. Si continua comunque loggando solo la connettivita'.")
 
     print(f"outbox: {OUTBOX}  (backlog non consegnato: {max(0, OUTBOX.stat().st_size - _read_cursor()) if OUTBOX.exists() else 0} byte)")
-    print(f"sicurezza: stop se batteria ≥ {args.max_temp}°C per {args.temp_strikes} letture; "
-          f"stop remoto via collector.")
+    print(f"sicurezza: AVVISO a ≥ {args.max_temp}°C, EMERGENZA (spegni/stop) a ≥ {args.shutdown_temp}°C "
+          f"per {args.temp_strikes} letture; stop remoto via collector.")
 
     # Keep the CPU awake so the agent keeps sampling/sending with the screen off.
     set_wakelock(True)
     print("wake-lock acquisito (gira a schermo spento).")
 
-    over = 0
+    over_hot = 0
     last_stress_id = None
     while True:
         sample = {"timestamp": datetime.now(timezone.utc).isoformat(), "source": args.name,
@@ -400,6 +438,12 @@ def main():
         sample.update(http_check())
         sample.update(read_battery())
         sample["connection_status"] = "connected" if sample.get("http_ok") else "disconnected"
+
+        temp = sample.get("batt_temp")
+        hot = isinstance(temp, (int, float)) and temp >= args.max_temp
+        if hot:
+            sample["batt_warn"] = 1          # flagged on the dashboard too
+        over_hot = over_hot + 1 if (isinstance(temp, (int, float)) and temp >= args.shutdown_temp) else 0
         append_outbox(sample)
 
         # Deliver this sample plus anything missed since last time (PC off,
@@ -408,32 +452,29 @@ def main():
         stop_remote = bool(resp and resp.get("stop"))
         stress_cmd = resp.get("stress") if isinstance(resp, dict) else None
 
-        temp = sample.get("batt_temp")
-        over = over + 1 if isinstance(temp, (int, float)) and temp >= args.max_temp else 0
-
         q = sample.get("sig_quality") or "?"
         band = sample.get("sig_band") or "?"
         rsrp = sample.get("sig_rsrp", "?")
         http = sample.get("http_code") or ("FAIL" if not sample.get("http_ok") else "?")
         uplink = ("ok" + (f" (recuperati {sent})" if sent > 1 else "")) if caught_up \
             else f"NO (arretrato {backlog // 1024} KB)"
-        tstr = f" | {temp}°C" if isinstance(temp, (int, float)) else ""
+        tstr = (f" | {temp}°C" + ("🔥" if hot else "")) if isinstance(temp, (int, float)) else ""
         print(f"[{datetime.now().strftime('%H:%M:%S')}] {band} RSRP {rsrp} ({q}) "
               f"| http {http} | uplink {uplink}{tstr}")
 
-        reason = None
+        # EMERGENCY thermal limit takes priority over everything.
+        if over_hot >= args.temp_strikes:
+            thermal_shutdown(args, temp)
+            return 0
+
         if stop_remote:
-            reason = "stop remoto"
-        elif over >= args.temp_strikes:
-            reason = f"temperatura batteria {temp}°C ≥ {args.max_temp}"
-        if reason:
             final = {"timestamp": datetime.now(timezone.utc).isoformat(), "source": args.name,
-                     "agent_status": "stopped", "stop_reason": reason}
+                     "agent_status": "stopped", "stop_reason": "stop remoto"}
             final.update(read_battery())
             append_outbox(final)
             flush_outbox(args.collector, args.token)   # prova a consegnare l'avviso
             set_wakelock(False)
-            print(f">> STOP: {reason}. Agente terminato.")
+            print(">> STOP remoto. Agente terminato.")
             return 0
 
         # Remote-requested stress test (one-shot): run it on the phone's own

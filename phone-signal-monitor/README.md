@@ -145,10 +145,20 @@ Dalla dashboard (o via `POST /control`) puoi, anche da fuori casa:
   il risultato torna nella dashboard. Misura la rete reale del posto, non il
   tethering.
 
-L'agente ha inoltre un **cutoff di sicurezza automatico**: se la temperatura
-della batteria supera una soglia (`--max-temp`, default 44 °C) per alcune letture
-consecutive, si ferma da solo — anche senza PC raggiungibile. È una prudenza in
-più: il telefono mantiene comunque la propria protezione termica hardware.
+L'agente ha inoltre una **sicurezza termica automatica** a due soglie, utile
+quando non sei sul posto:
+
+- **Avviso** (`--max-temp`, default 44 °C): continua a monitorare ma marca il
+  campione come "caldo" (visibile sulla dashboard).
+- **Emergenza** (`--shutdown-temp`, default 46 °C, per alcune letture
+  consecutive): manda un allarme, rilascia il wake-lock così il telefono va in
+  sonno e si raffredda, e — **solo se il dispositivo è rootato** — lo **spegne**
+  (`su -c 'svc power shutdown'`).
+
+Nota onesta: un Android **non rootato non può autospegnersi** da un'app; lì
+l'agente fa il massimo consentito (stop + sonno + allarme) e la vera ultima
+difesa resta la **protezione termica hardware** del telefono, che a temperature
+critiche spegne da sé a prescindere.
 
 ## Test opzionali
 
