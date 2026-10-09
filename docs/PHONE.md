@@ -18,7 +18,7 @@ Sul PC avvia prima il collector con un token casuale:
 
 ```bash
 export POCKET_WIFI_TOKEN='token-casuale'
-./start.sh
+cd collector && ./start.sh
 ```
 
 Sul telefono copia `phone_agent.py`, `bands.py` e `run_agent.sh` in
