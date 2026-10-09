@@ -81,6 +81,13 @@
   .qbar .fill{height:100%;border-radius:4px;} .qbar .pct{width:40px;text-align:right;font-family:var(--mono);}
   .legend{font-size:10.5px;color:var(--faint);margin-top:7px;}
   .callout{font-size:12px;margin-top:9px;padding:8px 11px;border-radius:6px;background:var(--panel-2);border:1px solid var(--line-soft);}
+  .daystrip{display:flex;gap:4px;overflow-x:auto;padding:2px 0 8px;scrollbar-width:thin;}
+  .daycell{flex:0 0 auto;min-width:46px;cursor:pointer;border:1px solid var(--line);border-radius:6px;padding:6px 5px 5px;background:var(--panel-2);text-align:center;transition:border-color .15s;}
+  .daycell:hover{border-color:var(--faint);}
+  .daycell.sel{border-color:var(--accent);box-shadow:inset 0 0 0 1px var(--accent);}
+  .daycell .dq{height:6px;border-radius:3px;margin-bottom:5px;}
+  .daycell .dd{font-size:10px;color:var(--dim);font-family:var(--mono);line-height:1.2;}
+  .daycell .dp{font-size:10px;color:var(--faint);font-family:var(--mono);}
   .callout b{color:var(--txt);font-weight:600;}
   ul.concl{margin:0;padding-left:16px;} ul.concl li{margin:7px 0;font-size:13px;} ul.concl b{color:var(--txt);font-weight:600;}
   .gloss{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:10px 18px;}
@@ -131,6 +138,14 @@
   </section>
 
   <section class="card">
+    <h2 id="t_byday">Day by day</h2>
+    <p class="hint" id="h_byday"></p>
+    <div class="daystrip" id="dayStrip"></div>
+    <div class="callout" id="dayInfo"></div>
+    <svg id="daySvg" viewBox="0 0 800 130" preserveAspectRatio="none"></svg>
+  </section>
+
+  <section class="card">
     <h2 id="t_hour">By hour of day</h2>
     <p class="hint" id="h_hour"></p>
     <svg id="hourChart" viewBox="0 0 800 150" preserveAspectRatio="none"></svg>
@@ -165,7 +180,7 @@
 <script>
 const $=id=>document.getElementById(id);
 const dash=v=>(v===undefined||v===null||v==="")?null:v;
-let days=30,last=null,lang=localStorage.getItem("pw_lang")||"en";
+let days=30,last=null,lang=localStorage.getItem("pw_lang")||"en",selectedDay=null;
 const L=(en,it)=>lang==="it"?it:en;
 
 const PROFILES={family:{mbps:15,latSoft:120,latHard:250},uhd4k:{mbps:30,latSoft:150,latHard:300},
@@ -204,6 +219,8 @@ function fillLabels(){
   $("h_meter").textContent=L("Where your typical signal sits. Green = comfortable, amber = usable, red = struggling.","Dove si colloca il segnale tipico. Verde = comodo, ambra = utilizzabile, rosso = in difficoltà.");
   $("t_time").textContent=L("Signal over time","Andamento nel tempo");
   $("h_time").textContent=L("The line is your median signal; the coloured bands show good / fair / weak zones. Higher is better.","La linea è il segnale mediano; le fasce colorate indicano le zone buono / discreto / scarso. Più in alto = meglio.");
+  $("t_byday").textContent=L("Day by day","Giorno per giorno");
+  $("h_byday").textContent=L("Each cell is a day — colour = overall quality. Tap a day for its hour-by-hour detail; scroll for earlier days.","Ogni cella è un giorno — colore = qualità generale. Tocca un giorno per il dettaglio ora per ora; scorri per i giorni precedenti.");
   $("t_hour").textContent=L("By hour of day","Per ora del giorno");
   $("h_hour").textContent=L("How often the signal is usable at each hour (local time). Low bars = that hour tends to be bad — often the evening.","Quanto spesso il segnale è usabile a ogni ora (ora locale). Barre basse = quell'ora tende ad andare male — spesso la sera.");
   $("t_mix").textContent=L("Signal quality mix","Mix di qualità");
@@ -285,6 +302,29 @@ function renderHour(h){
     `Più debole verso le <b>${worst.hour}:00</b> (${worst.ok_quality_pct}% usabile) · migliore verso le <b>${best.hour}:00</b> (${best.ok_quality_pct}%).`);
 }
 
+function renderByDay(h){
+  const bd=h.by_day||[];
+  if(!bd.length){$("dayStrip").innerHTML=`<span class="muted">${L("no data yet","ancora nessun dato")}</span>`;$("dayInfo").textContent="";$("daySvg").innerHTML="";return;}
+  if(!selectedDay||!bd.some(d=>d.date===selectedDay)) selectedDay=bd[bd.length-1].date;
+  const qc=v=>v==null?"var(--line)":v>=80?"var(--accent)":v>=50?"var(--warn)":"var(--bad)";
+  $("dayStrip").innerHTML=bd.map(d=>{const[,m,dd]=d.date.split("-");
+    return `<div class="daycell${d.date===selectedDay?' sel':''}" data-day="${d.date}"><div class="dq" style="background:${qc(d.ok_quality_pct)}"></div><div class="dd">${dd}/${m}</div><div class="dp">${d.ok_quality_pct==null?'—':d.ok_quality_pct+'%'}</div></div>`;}).join("");
+  const sel=$("dayStrip").querySelector(".daycell.sel"); if(sel) sel.scrollIntoView({inline:"center",block:"nearest"});
+  renderDayDetail(bd.find(d=>d.date===selectedDay));
+}
+function renderDayDetail(d){
+  if(!d)return;
+  const[,m,dd]=d.date.split("-");
+  $("dayInfo").innerHTML=L(
+    `<b>${dd}/${m}</b> · signal ${sig(d.rsrp_median).w} (${d.rsrp_median??'—'} dBm) · usable ${d.ok_quality_pct??'—'}% · data ok ${d.uplink_ok_pct??'—'}% · ${d.n} samples`,
+    `<b>${dd}/${m}</b> · segnale ${sig(d.rsrp_median).w} (${d.rsrp_median??'—'} dBm) · usabile ${d.ok_quality_pct??'—'}% · dato ok ${d.uplink_ok_pct??'—'}% · ${d.n} campioni`);
+  const W=800,H=130,padL=26,padR=8,padT=8,padB=20,bw=(W-padL-padR)/24;let g="";
+  for(let v=0;v<=100;v+=50){const yy=padT+(100-v)*(H-padT-padB)/100;g+=`<line x1="${padL}" y1="${yy}" x2="${W-padR}" y2="${yy}" stroke="var(--line)"/><text x="2" y="${yy+4}" fill="var(--faint)" font-size="9">${v}</text>`;}
+  (d.hours||[]).forEach((val,i)=>{if(val==null)return;const hh=(H-padT-padB)*val/100,c=val>=80?"var(--accent)":val>=50?"var(--warn)":"var(--bad)",xx=padL+i*bw;
+    g+=`<rect x="${(xx+1).toFixed(1)}" y="${(H-padB-hh).toFixed(1)}" width="${Math.max(1,bw-2).toFixed(1)}" height="${hh.toFixed(1)}" fill="${c}"><title>${i}:00 — ${val}%</title></rect>`;});
+  for(let hh=0;hh<24;hh+=3){const xx=padL+hh*bw+bw/2;g+=`<text x="${xx.toFixed(1)}" y="${H-5}" fill="var(--faint)" font-size="9" text-anchor="middle">${hh}</text>`;}
+  $("daySvg").innerHTML=g;
+}
 function renderQdist(h){
   const p=h.quality_pct||{},order=["excellent","good","fair","poor","very_poor"];
   $("qdist").innerHTML=order.map(k=>{const v=p[k]||0;return `<div class="qbar"><span class="name">${QN[k]}</span><span class="track"><span class="fill" style="width:${v}%;background:${QCOL[k]}"></span></span><span class="pct">${v}%</span></div>`;}).join("");
@@ -339,7 +379,7 @@ function render(){
   $("vFor").textContent=L("for","per")+" “"+profName(profile)+"”";
   $("summary").textContent=summarySentence(h,c.level);
   $("concl").innerHTML=c.bullets.map(x=>`<li>${x}</li>`).join("");
-  renderMeter(h);renderKpis(h);renderRsrp(h);renderHour(h);renderQdist(h);renderCov(h);
+  renderMeter(h);renderKpis(h);renderRsrp(h);renderByDay(h);renderHour(h);renderQdist(h);renderCov(h);
 }
 
 async function load(){
@@ -355,6 +395,7 @@ $("segDays").addEventListener("click",e=>{const b=e.target.closest("button");if(
 $("langBtn").addEventListener("click",()=>{lang=lang==="it"?"en":"it";localStorage.setItem("pw_lang",lang);render();});
 $("profile").addEventListener("change",e=>{profile=e.target.value;localStorage.setItem("pw_profile",profile);$("customWrap").style.display=profile==="custom"?"":"none";render();});
 $("customMbps").addEventListener("input",render);
+$("dayStrip").addEventListener("click",e=>{const c=e.target.closest(".daycell");if(!c||!last)return;selectedDay=c.dataset.day;renderByDay(last);});
 
 fillLabels();load();setInterval(load,60000);
 </script>

@@ -345,6 +345,35 @@ def _history(days: int) -> dict:
         "uplink_ok_pct": round(100 * b["up"] / b["n"]) if b["n"] else None,
     } for hh, b in sorted(by_hour.items())]
 
+    # Per-day aggregates (LOCAL date), each with its own 24h quality profile —
+    # powers the scrollable "day by day" view on the stats page.
+    bd = {}
+    for dt, d in samples:
+        loc = dt.astimezone()
+        day = loc.date().isoformat()
+        e = bd.setdefault(day, {"rsrp": [], "okq": 0, "up": 0, "n": 0, "hours": {}})
+        e["n"] += 1
+        if str(d.get("sig_rsrp", "")).lstrip("-").isdigit():
+            e["rsrp"].append(int(d["sig_rsrp"]))
+        q_ok = d.get("sig_quality") in ("fair", "good", "excellent")
+        if q_ok:
+            e["okq"] += 1
+        if d.get("http_ok") is True:
+            e["up"] += 1
+        he = e["hours"].setdefault(loc.hour, {"okq": 0, "n": 0})
+        he["n"] += 1
+        if q_ok:
+            he["okq"] += 1
+    h["by_day"] = [{
+        "date": day,
+        "n": e["n"],
+        "rsrp_median": round(statistics.median(e["rsrp"])) if e["rsrp"] else None,
+        "ok_quality_pct": round(100 * e["okq"] / e["n"]) if e["n"] else None,
+        "uplink_ok_pct": round(100 * e["up"] / e["n"]) if e["n"] else None,
+        "hours": [round(100 * e["hours"][hh]["okq"] / e["hours"][hh]["n"]) if hh in e["hours"] and e["hours"][hh]["n"] else None
+                  for hh in range(24)],
+    } for day, e in sorted(bd.items())]
+
     # Rough data-usage estimate for the window: stress tests (the big, known
     # cost) + a small per-sample overhead for the continuous monitoring.
     stress_mb = sum(float(d["data_mb"]) for _, d in samples
