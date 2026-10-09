@@ -170,6 +170,13 @@
   </section>
 
   <section class="card">
+    <h2 id="t_pot">Upgrade potential — dedicated 4G/5G router</h2>
+    <p class="hint" id="h_pot"></p>
+    <div style="margin-bottom:10px"><span class="badge unknown" id="potLvl">—</span></div>
+    <ul class="concl" id="potBody"><li class="muted">—</li></ul>
+  </section>
+
+  <section class="card">
     <h2 id="t_gloss">Quick glossary</h2>
     <div class="gloss" id="gloss"></div>
   </section>
@@ -228,6 +235,8 @@ function fillLabels(){
   $("t_uptime").textContent=L("Sensor uptime","Attività del sensore");
   $("h_uptime").textContent=L("Samples received per time slot. Gaps = the phone or the PC was off.","Campioni ricevuti per fascia. Buchi = telefono o PC spenti.");
   $("t_concl").textContent=L("What this means for you","Cosa significa per te");
+  $("t_pot").textContent=L("Upgrade potential — dedicated 4G/5G router","Potenziale upgrade — router 4G/5G dedicato");
+  $("h_pot").textContent=L("The phone measures this spot's radio environment; a router with external antennas/CA can do better — but is bounded by the same coverage. Rough estimate, not a promise.","Il telefono misura l'ambiente radio del posto; un router con antenne esterne/CA può fare meglio — ma è vincolato alla stessa copertura. Stima indicativa, non una promessa.");
   $("t_gloss").textContent=L("Quick glossary","Glossario rapido");
   $("foot").textContent=L("updates every 60 s","aggiorna ogni 60 s");
   const sel=$("profile");sel.innerHTML=Object.keys(PROFILES).map(id=>`<option value="${id}">${profName(id)}</option>`).join("");sel.value=profile;
@@ -368,6 +377,37 @@ function summarySentence(h,level){
     `Il segnale è tipicamente ${sig(rsrp).w} (${rsrp} dBm), usabile nel ${okq}% del tempo, dato affidabile al ${up}%.${worstTxt} Questa connessione ${verdict} “${profName(profile)}”.`);
 }
 
+function renderPotential(h){
+  const body=$("potBody"),lvlEl=$("potLvl");
+  if(!h||!h.n){lvlEl.className="badge unknown";lvlEl.textContent=L("not enough data","dati insufficienti");body.innerHTML=`<li class="muted">—</li>`;return;}
+  const r=(h.rsrp||{}).median,bands=Object.keys(h.bands||{}),nb=bands.length,low=h.low_band_pct>0,g5=h.seen_5g;
+  const b=[];
+  b.push(g5
+    ?L(`<b>5G</b>: seen here — a 5G router (e.g. ZTE G5C) could be a real jump over LTE.`,`<b>5G</b>: visto qui — un router 5G (es. ZTE G5C) potrebbe essere un vero salto rispetto all'LTE.`)
+    :L(`<b>5G</b>: never seen (LTE only) — a 5G router's 5G edge would not apply here; you'd stay on LTE.`,`<b>5G</b>: mai visto (solo LTE) — il vantaggio 5G di un router qui non si applicherebbe; resteresti su LTE.`));
+  b.push(nb>=2
+    ?L(`<b>Bands</b>: ${bands.join(", ")} (${nb}) — a router with carrier aggregation could combine them for more bandwidth than a phone (one band at a time).`,`<b>Bande</b>: ${bands.join(", ")} (${nb}) — un router con carrier aggregation potrebbe combinarle per più banda di un telefono (una banda per volta).`)
+    :L(`<b>Bands</b>: ${bands.join(", ")||"—"} — little aggregation opportunity.`,`<b>Bande</b>: ${bands.join(", ")||"—"} — poca opportunità di aggregazione.`));
+  b.push(low
+    ?L(`<b>Low-band 800 present</b> ${h.low_band_pct}% of the time — good reach; a directional external antenna aimed at the tower would mainly raise SINR (speed & stability).`,`<b>Banda bassa 800 presente</b> nel ${h.low_band_pct}% del tempo — buona portata; un'antenna esterna direzionale verso il ripetitore alzerebbe soprattutto il SINR (velocità e stabilità).`)
+    :L(`<b>No low-band</b> — an external antenna could help catch it and improve reach.`,`<b>Nessuna banda bassa</b> — un'antenna esterna potrebbe aiutare a prenderla e migliorare la portata.`));
+  if(r!=null){
+    const est=r<=-105?L("weak signal → an external antenna could add a lot (often +5–15 dB, roughly 1.5–3× throughput when the link is the bottleneck).","segnale debole → un'antenna esterna potrebbe aggiungere parecchio (spesso +5–15 dB, grossomodo 1,5–3× di throughput quando il collo di bottiglia è il link).")
+      :r<=-95?L("fair signal → moderate gains from an external antenna (a few dB, steadier speed).","segnale discreto → guadagni moderati da un'antenna esterna (qualche dB, velocità più stabile).")
+      :L("already strong → little to gain on the link itself; a better device mostly helps distribution.","già forte → poco da guadagnare sul link; un apparato migliore aiuta soprattutto la distribuzione.");
+    b.push(L(`<b>Antenna</b>: typical signal ${r} dBm — ${est}`,`<b>Antenna</b>: segnale tipico ${r} dBm — ${est}`));
+  }
+  b.push(L(`<b>WiFi 6 / AX1800</b>: LAN side only — it serves many devices (your 7 + 2 Netflix) in the house better, but does NOT add mobile bandwidth.`,`<b>WiFi 6 / AX1800</b>: solo lato LAN — serve meglio tanti dispositivi (i tuoi 7 + 2 Netflix) in casa, ma NON aggiunge banda mobile.`));
+  b.push(L(`<i>Note: the phone doesn't report SINR — to confirm an antenna's gain, check the router's own admin page (it shows SINR) at the same spot.</i>`,`<i>Nota: il telefono non riporta il SINR — per confermare il guadagno dell'antenna, guarda la pagina admin del router (mostra il SINR) nello stesso punto.</i>`));
+  let lvl,txt;
+  if(g5){lvl="good";txt=L("HIGH (5G available)","ALTO (5G disponibile)");}
+  else if(r!=null&&r<=-105){lvl="good";txt=L("HIGH (weak signal — antenna would help)","ALTO (segnale debole — l'antenna aiuterebbe)");}
+  else if((r!=null&&r<=-95)||nb>=2){lvl="borderline";txt=L("MEDIUM (antenna + CA gains)","MEDIO (guadagni da antenna + CA)");}
+  else {lvl="unknown";txt=L("LOW on the link (device mainly helps distribution)","BASSO sul link (l'apparato aiuta soprattutto la distribuzione)");}
+  lvlEl.className="badge "+lvl;lvlEl.textContent=L("Upgrade potential: ","Potenziale upgrade: ")+txt;
+  body.innerHTML=b.map(x=>`<li>${x}</li>`).join("");
+}
+
 function render(){
   fillLabels();
   const h=last;
@@ -379,7 +419,7 @@ function render(){
   $("vFor").textContent=L("for","per")+" “"+profName(profile)+"”";
   $("summary").textContent=summarySentence(h,c.level);
   $("concl").innerHTML=c.bullets.map(x=>`<li>${x}</li>`).join("");
-  renderMeter(h);renderKpis(h);renderRsrp(h);renderByDay(h);renderHour(h);renderQdist(h);renderCov(h);
+  renderMeter(h);renderKpis(h);renderRsrp(h);renderByDay(h);renderHour(h);renderQdist(h);renderCov(h);renderPotential(h);
 }
 
 async function load(){

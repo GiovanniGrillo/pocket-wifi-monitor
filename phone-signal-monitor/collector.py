@@ -293,6 +293,13 @@ def _history(days: int) -> dict:
     h["low_band_pct"] = round(100 * low_n / len(samples))
     ops = sorted({d.get("operator") for _, d in samples if d.get("operator")})
     h["operators"] = ops
+    net_types = {}
+    for _, d in samples:
+        nt = d.get("network_type")
+        if nt:
+            net_types[nt] = net_types.get(nt, 0) + 1
+    h["net_types"] = net_types
+    h["seen_5g"] = any("NR" in k.upper() or "5G" in k.upper() for k in net_types)
 
     # Time series, bucketed by hour (<=3 days) or by day (longer), for charting.
     bucket = "hour" if span_h <= 72 else "day"
