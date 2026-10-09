@@ -253,6 +253,17 @@ def run_stress(secs: int, streams: int, budget_mb: int) -> dict:
     }
 
 
+def set_wakelock(on: bool = True):
+    """Hold (or release) a Termux CPU wake lock so the agent keeps running
+    with the screen off. Without it Android freezes the process in doze and
+    sampling/uplink stop entirely. Best-effort; needs the termux-api package."""
+    try:
+        subprocess.run(["termux-wake-lock" if on else "termux-wake-unlock"],
+                       capture_output=True, timeout=8)
+    except (subprocess.SubprocessError, FileNotFoundError):
+        pass
+
+
 def read_battery() -> dict:
     """Battery % / temperature / health via Termux:API (best-effort)."""
     d = _run_json(["termux-battery-status"]) or {}
@@ -376,6 +387,10 @@ def main():
     print(f"sicurezza: stop se batteria ≥ {args.max_temp}°C per {args.temp_strikes} letture; "
           f"stop remoto via collector.")
 
+    # Keep the CPU awake so the agent keeps sampling/sending with the screen off.
+    set_wakelock(True)
+    print("wake-lock acquisito (gira a schermo spento).")
+
     over = 0
     last_stress_id = None
     while True:
@@ -417,6 +432,7 @@ def main():
             final.update(read_battery())
             append_outbox(final)
             flush_outbox(args.collector, args.token)   # prova a consegnare l'avviso
+            set_wakelock(False)
             print(f">> STOP: {reason}. Agente terminato.")
             return 0
 
