@@ -25,6 +25,8 @@ import statistics
 import subprocess
 import sys
 import threading
+import time
+import urllib.request
 from datetime import datetime, timedelta, timezone
 from functools import partial
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
@@ -40,6 +42,84 @@ QUALITY_ORDER = ["very_poor", "poor", "fair", "good", "excellent"]
 
 _lock = threading.Lock()
 _latest = {"ts": None, "fields": {}, "source": ""}
+
+# Push notifications (optional): POST the message body to NOTIFY_URL, e.g. an
+# ntfy.sh topic (https://ntfy.sh/your-topic). Fired on sensor offline, overheat/
+# stop and SIM loss. Keeps the 30-day unattended run from failing silently.
+NOTIFY_URL = ""
+OFFLINE_MIN = 60
+_notify_state = {"offline": False, "sim_ready": True}
+
+
+def _notify(title: str, msg: str):
+    if not NOTIFY_URL:
+        return
+    def _send():
+        try:
+            req = urllib.request.Request(
+                NOTIFY_URL, data=msg.encode("utf-8"), method="POST",
+                headers={"Title": title, "Priority": "high", "Tags": "warning"})
+            urllib.request.urlopen(req, timeout=10)
+        except Exception:  # noqa: BLE001
+            pass
+    threading.Thread(target=_send, daemon=True).start()
+
+
+def _check_alerts(items):
+    """Fire notifications from freshly ingested samples (best-effort)."""
+    if not NOTIFY_URL:
+        return
+    for it in items:
+        src = it.get("source", "phone")
+        st = it.get("agent_status")
+        if st == "thermal_shutdown":
+            _notify("🌡️ Sensore: SURRISCALDAMENTO",
+                    f"{src}: batteria {it.get('batt_temp','?')}°C — agente fermato e messo a raffreddare.")
+        elif st == "stopped":
+            _notify("⏹️ Sensore fermato", f"{src}: stop remoto.")
+        sim = it.get("sim_status")
+        if sim is not None:
+            ready = sim in ("ready", "valid")
+            if _notify_state["sim_ready"] and not ready:
+                _notify("📵 SIM persa", f"{src}: sim_status={sim}")
+            _notify_state["sim_ready"] = ready
+    if _notify_state["offline"]:
+        _notify("✅ Sensore di nuovo online", "I dati stanno di nuovo arrivando.")
+        _notify_state["offline"] = False
+
+
+def _offline_monitor():
+    """Background: warn once when no sample has arrived for OFFLINE_MIN minutes."""
+    while True:
+        time.sleep(60)
+        with _lock:
+            ts = _latest["ts"]
+        if ts is None:
+            continue
+        age = (datetime.now(timezone.utc) - ts).total_seconds()
+        if age > OFFLINE_MIN * 60 and not _notify_state["offline"]:
+            _notify("⚠️ Sensore OFFLINE", f"Nessun dato da ~{int(age/60)} minuti.")
+            _notify_state["offline"] = True
+
+
+def _auto_stress_scheduler(hours, budget_mb):
+    """Background: at the top of each configured LOCAL hour, queue one stress
+    test (the phone runs it at its next poll). Once per hour per day."""
+    done = set()
+    while True:
+        now = datetime.now()
+        key = (now.date().isoformat(), now.hour)
+        if now.hour in hours and key not in done:
+            with _lock:
+                if not _control.get("stress"):
+                    _control["stress"] = {"id": int(datetime.now(timezone.utc).timestamp()),
+                                          "budget_mb": budget_mb, "streams": 3, "secs": 15}
+                    _save_control()
+            done.add(key)
+            if len(done) > 100:
+                done = set(sorted(done)[-50:])
+        time.sleep(60)
+
 
 CONTROL_FILE = DATA_DIR / "control.json"
 # Remote control the phone reads on each POST: a kill-switch and an optional
@@ -370,6 +450,7 @@ class Handler(BaseHTTPRequestHandler):
             _latest["source"] = str(last.get("source", "phone"))
             resp = {"ok": True, "n": len(items), "stop": bool(_control.get("stop")),
                     "stress": _control.get("stress")}
+        _check_alerts(items)
         self._send(200, json.dumps(resp).encode(), "application/json")
 
     def do_GET(self):
@@ -467,10 +548,22 @@ def main():
     ap.add_argument("--token", default="", help="shared secret the phone must send (X-Token)")
     ap.add_argument("--stale", type=int, default=120,
                     help="seconds without a sample before the phone is shown as 'fermo'")
+    ap.add_argument("--notify-url", default="",
+                    help="URL per notifiche push (es. https://ntfy.sh/tuo-topic-segreto)")
+    ap.add_argument("--offline-min", type=int, default=60,
+                    help="minuti senza dati prima dell'avviso OFFLINE (default 60)")
+    ap.add_argument("--auto-stress", default="",
+                    help="ore locali per stress test automatici, es. '13,21' (vuoto = off)")
+    ap.add_argument("--auto-stress-mb", type=int, default=50,
+                    help="budget MB per ogni stress test automatico (default 50)")
     args = ap.parse_args()
 
     if args.bind not in ("127.0.0.1", "::1", "localhost") and not args.token:
         ap.error("--token è obbligatorio quando --bind espone il collector alla rete")
+
+    global NOTIFY_URL, OFFLINE_MIN
+    NOTIFY_URL = args.notify_url
+    OFFLINE_MIN = args.offline_min
 
     _load_control()
     if _control.get("stop"):
@@ -486,6 +579,14 @@ def main():
     print(f"Dashboard live:  http://127.0.0.1:{args.port}")
     print(f"Statistiche:     http://127.0.0.1:{args.port}/stats")
     print(f"(da remoto, via Tailscale: http://<tuo-IP-tailscale>:{args.port})")
+    if NOTIFY_URL:
+        threading.Thread(target=_offline_monitor, daemon=True).start()
+        print(f"Notifiche: ON (offline > {OFFLINE_MIN} min, surriscaldamento, SIM persa)")
+    if args.auto_stress:
+        hrs = [int(x) for x in args.auto_stress.split(",") if x.strip().isdigit()]
+        if hrs:
+            threading.Thread(target=_auto_stress_scheduler, args=(hrs, args.auto_stress_mb), daemon=True).start()
+            print(f"Stress test automatici: ore {hrs} ({args.auto_stress_mb} MB l'uno)")
     print("Ctrl-C per fermare.")
     try:
         server.serve_forever()
