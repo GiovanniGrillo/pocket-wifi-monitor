@@ -1,0 +1,204 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Statistiche presa rete</title>
+<style>
+  :root {
+    --bg:#0e1116; --card:#1b222c; --line:#273040; --txt:#e6edf3; --dim:#8b98a9;
+    --faint:#5a6778; --accent:#3fb950; --warn:#d29922; --bad:#f85149;
+    --mono:ui-monospace,"SF Mono","JetBrains Mono",Menlo,Consolas,monospace;
+    --sans:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  }
+  @media (prefers-color-scheme:light){:root{--bg:#f4f6f9;--card:#fff;--line:#dde3ea;--txt:#1a212b;--dim:#5a6675;--faint:#8893a2;}}
+  *{box-sizing:border-box;}
+  body{margin:0;background:var(--bg);color:var(--txt);font-family:var(--sans);line-height:1.45;-webkit-font-smoothing:antialiased;}
+  .wrap{max-width:960px;margin:0 auto;padding:20px 16px 60px;}
+  header{display:flex;align-items:center;gap:12px;flex-wrap:wrap;padding:6px 2px 18px;}
+  .logo{width:40px;height:40px;border-radius:10px;flex:none;background:linear-gradient(135deg,var(--accent),#2ea043);display:grid;place-items:center;color:#0b0f14;font-weight:800;font-size:15px;}
+  h1{margin:0;font-size:18px;font-weight:650;}
+  .sub{margin:0;font-size:12.5px;color:var(--dim);}
+  .spacer{flex:1;}
+  a.link{font-size:12.5px;color:var(--accent);text-decoration:none;border:1px solid var(--line);border-radius:8px;padding:6px 11px;}
+  .seg{display:inline-flex;border:1px solid var(--line);border-radius:8px;overflow:hidden;}
+  .seg button{font:inherit;font-size:12.5px;background:transparent;color:var(--dim);border:0;padding:6px 12px;cursor:pointer;}
+  .seg button.on{background:var(--accent);color:#0b0f14;font-weight:600;}
+  .kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-bottom:16px;}
+  .kpi{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px 15px;}
+  .kpi .l{font-size:11px;text-transform:uppercase;letter-spacing:.6px;color:var(--faint);}
+  .kpi .v{font-size:23px;font-weight:700;font-family:var(--mono);letter-spacing:-.5px;margin-top:3px;}
+  .kpi .v small{font-size:13px;color:var(--dim);font-weight:500;}
+  .v.good{color:var(--accent);} .v.warn{color:var(--warn);} .v.bad{color:var(--bad);}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px 17px;margin-bottom:14px;}
+  .card h2{margin:0 0 12px;font-size:11px;font-weight:700;letter-spacing:.7px;text-transform:uppercase;color:var(--faint);}
+  svg{display:block;width:100%;height:auto;}
+  .qbar{display:flex;align-items:center;gap:10px;margin:7px 0;font-size:13px;}
+  .qbar .name{width:70px;color:var(--dim);}
+  .qbar .track{flex:1;height:14px;background:color-mix(in srgb,var(--line) 60%,transparent);border-radius:7px;overflow:hidden;}
+  .qbar .fill{height:100%;border-radius:7px;}
+  .qbar .pct{width:42px;text-align:right;font-family:var(--mono);}
+  ul.concl{margin:0;padding-left:18px;} ul.concl li{margin:7px 0;font-size:14px;}
+  ul.concl b{color:var(--txt);}
+  .muted{color:var(--faint);}
+  footer{margin-top:20px;text-align:center;font-size:12px;color:var(--faint);}
+  .legend{font-size:11px;color:var(--faint);margin-top:6px;}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="logo">PW</div>
+    <div>
+      <h1>Statistiche presa rete</h1>
+      <p class="sub" id="sub">caricamento…</p>
+    </div>
+    <div class="spacer"></div>
+    <div class="seg" id="seg">
+      <button data-d="7">7 gg</button>
+      <button data-d="30" class="on">30 gg</button>
+      <button data-d="365">tutto</button>
+    </div>
+    <a class="link" href="/">◀ live</a>
+  </header>
+
+  <div class="kpis" id="kpis"></div>
+
+  <div class="card">
+    <h2>Andamento RSRP nel tempo</h2>
+    <svg id="rsrpChart" viewBox="0 0 800 220" preserveAspectRatio="none" role="img"></svg>
+    <div class="legend" id="rsrpLegend"></div>
+  </div>
+
+  <div class="card">
+    <h2>Copertura campioni (buchi = telefono/PC spenti)</h2>
+    <svg id="covChart" viewBox="0 0 800 90" preserveAspectRatio="none" role="img"></svg>
+  </div>
+
+  <div class="card">
+    <h2>Distribuzione qualità</h2>
+    <div id="qdist"></div>
+  </div>
+
+  <div class="card">
+    <h2>Conclusioni</h2>
+    <ul class="concl" id="concl"><li class="muted">—</li></ul>
+  </div>
+
+  <footer><span id="foot">aggiornamento ogni 60 s</span></footer>
+</div>
+
+<script>
+const $ = id => document.getElementById(id);
+let days = 30;
+
+const QCOL = {excellent:"var(--accent)", good:"var(--accent)", fair:"var(--warn)", poor:"var(--bad)", very_poor:"var(--bad)"};
+const QNAME = {excellent:"eccellente", good:"buono", fair:"discreto", poor:"scarso", very_poor:"pessimo"};
+
+function kpi(label, value, cls, sub){
+  return `<div class="kpi"><div class="l">${label}</div><div class="v ${cls||''}">${value}${sub?` <small>${sub}</small>`:''}</div></div>`;
+}
+function rsrpClass(v){ if(v===null||v===undefined) return ''; if(v>=-90) return 'good'; if(v>=-100) return 'warn'; return 'bad'; }
+
+function renderKpis(h){
+  const r = h.rsrp||{};
+  const tiles = [];
+  tiles.push(kpi("RSRP mediano", r.median!=null?`${r.median}`:'—', rsrpClass(r.median), r.median!=null?'dBm':''));
+  tiles.push(kpi("Qualità ≥ discreta", h.pct_ok_quality!=null?`${h.pct_ok_quality}`:'—', h.pct_ok_quality>=80?'good':h.pct_ok_quality>=50?'warn':'bad', '%'));
+  tiles.push(kpi("Uplink ok", h.uplink_ok_pct!=null?`${h.uplink_ok_pct}`:'—', h.uplink_ok_pct>=95?'good':h.uplink_ok_pct>=80?'warn':'bad','%'));
+  tiles.push(kpi("Banda prevalente", h.band_main||'—', h.low_band_pct>0?'good':''));
+  tiles.push(kpi("Campioni", h.n!=null?h.n.toLocaleString('it'):'—'));
+  tiles.push(kpi("Giorni coperti", h.days_covered!=null?h.days_covered:'—', '', h.days_covered!=null?'gg':''));
+  if(h.http_ms_median!=null) tiles.push(kpi("Latenza http", h.http_ms_median, h.http_ms_median<150?'good':h.http_ms_median<400?'warn':'bad','ms'));
+  $("kpis").innerHTML = tiles.join("");
+}
+
+function renderRsrpChart(h){
+  const s = h.series||[];
+  const W=800,H=220,padL=42,padR=12,padT=12,padB=24;
+  const yMin=-120,yMax=-60;
+  const x = i => padL + (s.length<=1?0:i*(W-padL-padR)/(s.length-1));
+  const y = v => padT + (yMax-v)*(H-padT-padB)/(yMax-yMin);
+  let g = '';
+  // gridlines + labels every 10 dBm
+  for(let v=-60; v>=-120; v-=10){
+    const yy=y(v);
+    g += `<line x1="${padL}" y1="${yy}" x2="${W-padR}" y2="${yy}" stroke="var(--line)" stroke-width="1"/>`;
+    g += `<text x="4" y="${yy+4}" fill="var(--faint)" font-size="11">${v}</text>`;
+  }
+  // polyline, breaking on null
+  let pts=[], segs=[];
+  s.forEach((p,i)=>{ if(p.rsrp_median==null){ if(pts.length)segs.push(pts); pts=[]; } else pts.push(`${x(i).toFixed(1)},${y(p.rsrp_median).toFixed(1)}`); });
+  if(pts.length)segs.push(pts);
+  segs.forEach(seg=>{ g += `<polyline points="${seg.join(' ')}" fill="none" stroke="var(--accent)" stroke-width="2"/>`; });
+  // dots
+  s.forEach((p,i)=>{ if(p.rsrp_median!=null) g += `<circle cx="${x(i).toFixed(1)}" cy="${y(p.rsrp_median).toFixed(1)}" r="2.2" fill="var(--accent)"/>`; });
+  $("rsrpChart").innerHTML = g || `<text x="${W/2}" y="${H/2}" fill="var(--faint)" font-size="13" text-anchor="middle">nessun dato</text>`;
+  if(s.length){
+    const f=new Date(s[0].t), l=new Date(s[s.length-1].t);
+    const fmt=d=>d.toLocaleString('it',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'});
+    $("rsrpLegend").textContent = `da ${fmt(f)} a ${fmt(l)} · ${h.bucket==='day'?'media giornaliera':'media oraria'} · più alto = meglio`;
+  } else $("rsrpLegend").textContent='';
+}
+
+function renderCoverage(h){
+  const s=h.series||[]; const W=800,H=90,padB=4;
+  if(!s.length){ $("covChart").innerHTML=`<text x="${W/2}" y="45" fill="var(--faint)" font-size="13" text-anchor="middle">nessun dato</text>`; return; }
+  const maxN=Math.max(...s.map(p=>p.n),1);
+  const bw=(W)/s.length;
+  let g='';
+  s.forEach((p,i)=>{
+    const hgt=(H-padB)*p.n/maxN;
+    const col = p.ok_rate>=95?'var(--accent)':p.ok_rate>=50?'var(--warn)':'var(--bad)';
+    g += `<rect x="${(i*bw).toFixed(1)}" y="${(H-padB-hgt).toFixed(1)}" width="${Math.max(1,bw-1).toFixed(1)}" height="${hgt.toFixed(1)}" fill="${col}"/>`;
+  });
+  $("covChart").innerHTML=g;
+}
+
+function renderQdist(h){
+  const p=h.quality_pct||{};
+  const order=["excellent","good","fair","poor","very_poor"];
+  $("qdist").innerHTML = order.map(q=>{
+    const v=p[q]||0;
+    return `<div class="qbar"><span class="name">${QNAME[q]}</span><span class="track"><span class="fill" style="width:${v}%;background:${QCOL[q]}"></span></span><span class="pct">${v}%</span></div>`;
+  }).join("");
+}
+
+function render(h){
+  $("sub").textContent = h.n ? `${h.n.toLocaleString('it')} campioni · ${h.operators&&h.operators.length?h.operators.join(', '):'—'} · ultimi ${h.window_days} giorni` : "in attesa di dati dal telefono…";
+  renderKpis(h); renderRsrpChart(h); renderCoverage(h); renderQdist(h);
+  const c=h.conclusions||[];
+  $("concl").innerHTML = c.length ? c.map(t=>`<li>${t.replace(/\*\*(.+?)\*\*/g,'<b>$1</b>')}</li>`).join("") : `<li class="muted">—</li>`;
+}
+
+async function load(){
+  try{
+    const headers = {};
+    const tok = localStorage.getItem("pw_token");
+    if (tok) headers["X-Token"] = tok;
+    let r = await fetch(`/history?days=${days}`, {cache:"no-store", headers});
+    if (r.status === 403) {
+      const entered = prompt("Token del collector:");
+      if (entered) {
+        localStorage.setItem("pw_token", entered);
+        headers["X-Token"] = entered;
+        r = await fetch(`/history?days=${days}`, {cache:"no-store", headers});
+      }
+    }
+    render(await r.json());
+    $("foot").textContent = "aggiornato " + new Date().toLocaleTimeString('it') + " · ogni 60 s";
+  }catch(e){ $("sub").textContent="collector non raggiungibile"; }
+}
+
+$("seg").addEventListener("click", e=>{
+  const b=e.target.closest("button"); if(!b) return;
+  days=parseInt(b.dataset.d,10);
+  [...$("seg").children].forEach(x=>x.classList.toggle("on",x===b));
+  load();
+});
+
+load();
+setInterval(load, 60000);
+</script>
+</body>
+</html>

@@ -1,0 +1,411 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Pocket-WiFi Monitor</title>
+<style>
+  :root {
+    --bg: #0e1116;
+    --bg-soft: #161b22;
+    --card: #1b222c;
+    --line: #273040;
+    --txt: #e6edf3;
+    --dim: #8b98a9;
+    --faint: #5a6778;
+    --accent: #3fb950;
+    --accent-dim: #2ea043;
+    --warn: #d29922;
+    --bad: #f85149;
+    --mono: ui-monospace, "SF Mono", "JetBrains Mono", Menlo, Consolas, monospace;
+    --sans: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  }
+  @media (prefers-color-scheme: light) {
+    :root {
+      --bg: #f4f6f9; --bg-soft: #eceff3; --card: #ffffff; --line: #dde3ea;
+      --txt: #1a212b; --dim: #5a6675; --faint: #8893a2;
+    }
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--bg); color: var(--txt);
+    font-family: var(--sans); line-height: 1.45;
+    -webkit-font-smoothing: antialiased;
+  }
+  .wrap { max-width: 920px; margin: 0 auto; padding: 20px 16px 60px; }
+
+  header {
+    display: flex; align-items: center; gap: 14px; flex-wrap: wrap;
+    padding: 6px 2px 20px;
+  }
+  .logo {
+    width: 40px; height: 40px; border-radius: 10px; flex: none;
+    background: linear-gradient(135deg, var(--accent), var(--accent-dim));
+    display: grid; place-items: center; color: #0b0f14; font-weight: 800;
+    font-size: 15px; letter-spacing: -.5px;
+  }
+  .title h1 { margin: 0; font-size: 18px; font-weight: 650; letter-spacing: -.2px; }
+  .title p { margin: 0; font-size: 12.5px; color: var(--dim); }
+  .spacer { flex: 1; }
+  .pill {
+    font-size: 12px; font-weight: 600; padding: 5px 11px; border-radius: 999px;
+    border: 1px solid var(--line); color: var(--dim); white-space: nowrap;
+    display: inline-flex; align-items: center; gap: 7px;
+  }
+  .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--faint); }
+  .pill.ok { color: var(--accent); border-color: color-mix(in srgb, var(--accent) 40%, var(--line)); }
+  .pill.ok .dot { background: var(--accent); box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 22%, transparent); }
+  .pill.warn { color: var(--warn); border-color: color-mix(in srgb, var(--warn) 40%, var(--line)); }
+  .pill.warn .dot { background: var(--warn); }
+  .pill.bad { color: var(--bad); border-color: color-mix(in srgb, var(--bad) 40%, var(--line)); }
+  .pill.bad .dot { background: var(--bad); }
+
+  button.ghost, a.ghost {
+    font: inherit; font-size: 12.5px; color: var(--dim); background: transparent;
+    border: 1px solid var(--line); border-radius: 8px; padding: 6px 11px; cursor: pointer;
+    display: inline-flex; align-items: center;
+  }
+  button.ghost:hover, a.ghost:hover { color: var(--txt); border-color: var(--faint); }
+  .ghost.danger { color: var(--bad); border-color: color-mix(in srgb, var(--bad) 45%, var(--line)); }
+  .ghost.on { color: var(--accent); border-color: color-mix(in srgb, var(--accent) 45%, var(--line)); }
+
+  /* hero */
+  .hero {
+    background: var(--card); border: 1px solid var(--line); border-radius: 16px;
+    padding: 22px; display: flex; align-items: center; gap: 24px; flex-wrap: wrap;
+    margin-bottom: 14px;
+  }
+  .bars { display: flex; align-items: flex-end; gap: 5px; height: 54px; }
+  .bars i {
+    width: 11px; border-radius: 3px; background: var(--line);
+    display: block; transition: background .3s, height .3s;
+  }
+  .bars i.on { background: var(--accent); }
+  .hero-main { min-width: 180px; }
+  .hero-op { font-size: 24px; font-weight: 700; letter-spacing: -.4px; }
+  .hero-net { font-size: 13px; color: var(--dim); margin-top: 2px; }
+  .hero-right { margin-left: auto; text-align: right; }
+  .hero-right .lbl { font-size: 11px; text-transform: uppercase; letter-spacing: .6px; color: var(--faint); }
+  .hero-right .val { font-size: 15px; font-weight: 600; font-family: var(--mono); }
+
+  /* no-sim banner */
+  .banner {
+    display: none; align-items: center; gap: 12px; margin-bottom: 14px;
+    background: color-mix(in srgb, var(--warn) 12%, var(--card));
+    border: 1px solid color-mix(in srgb, var(--warn) 35%, var(--line));
+    border-radius: 14px; padding: 14px 16px; font-size: 13.5px;
+  }
+  .banner.show { display: flex; }
+  .banner b { color: var(--warn); }
+  .banner svg { flex: none; }
+
+  /* grid */
+  .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 14px; }
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 16px 17px; }
+  .card h2 {
+    margin: 0 0 13px; font-size: 11px; font-weight: 700; letter-spacing: .7px;
+    text-transform: uppercase; color: var(--faint);
+    display: flex; align-items: center; gap: 7px;
+  }
+  .row { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; padding: 5px 0; }
+  .row + .row { border-top: 1px solid color-mix(in srgb, var(--line) 55%, transparent); }
+  .row .k { font-size: 13px; color: var(--dim); }
+  .row .v { font-size: 14px; font-weight: 600; font-family: var(--mono); text-align: right; }
+  .v.muted { color: var(--faint); font-weight: 500; }
+
+  .rate { display: flex; gap: 18px; margin-bottom: 4px; }
+  .rate > div { flex: 1; }
+  .rate .big { font-size: 22px; font-weight: 700; font-family: var(--mono); letter-spacing: -.5px; }
+  .rate .u { font-size: 11px; color: var(--faint); }
+  .arrow { color: var(--accent); }
+  .arrow.up { color: var(--warn); }
+
+  /* signal quality verdict */
+  .verdict {
+    display: flex; align-items: baseline; gap: 10px; margin: 2px 0 12px;
+    padding-bottom: 12px; border-bottom: 1px solid color-mix(in srgb, var(--line) 55%, transparent);
+  }
+  .verdict .q { font-size: 20px; font-weight: 750; letter-spacing: -.3px; }
+  .verdict .ql { font-size: 11px; text-transform: uppercase; letter-spacing: .6px; color: var(--faint); }
+  .q.q-excellent, .q.q-good { color: var(--accent); }
+  .q.q-fair { color: var(--warn); }
+  .q.q-poor, .q.q-very_poor { color: var(--bad); }
+
+  footer { margin-top: 22px; text-align: center; font-size: 12px; color: var(--faint); }
+  .live { display: inline-flex; align-items: center; gap: 6px; }
+  .live .dot { background: var(--accent); animation: pulse 2s infinite; }
+  @keyframes pulse { 0%,100% { opacity: 1 } 50% { opacity: .3 } }
+  .paused .live .dot { animation: none; background: var(--faint); }
+</style>
+</head>
+<body>
+<div class="wrap" id="app">
+  <header>
+    <div class="logo">PW</div>
+    <div class="title">
+      <h1>Pocket-WiFi Monitor</h1>
+      <p id="sub">in attesa dati…</p>
+    </div>
+    <div class="spacer"></div>
+    <span class="pill" id="statusPill"><span class="dot"></span><span id="statusText">—</span></span>
+    <a class="ghost" href="/stats" style="text-decoration:none">Statistiche ▸</a>
+    <button class="ghost" id="ctrlBtn">⏹ Ferma sensore</button>
+    <button class="ghost" id="pauseBtn">Pausa</button>
+  </header>
+
+  <div class="banner" id="simBanner">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 9v4m0 4h.01M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0Z"/></svg>
+    <div><b>Nessuna SIM inserita.</b> La dashboard è pronta: segnale, operatore e cella si popoleranno appena inserisci una SIM e la saponetta si aggancia alla rete.</div>
+  </div>
+
+  <div class="hero">
+    <div class="bars" id="bars"><i></i><i></i><i></i><i></i><i></i></div>
+    <div class="hero-main">
+      <div class="hero-op" id="heroOp">—</div>
+      <div class="hero-net" id="heroNet">nessun servizio</div>
+    </div>
+    <div class="hero-right">
+      <div class="lbl">Segnale</div>
+      <div class="val"><span id="heroBars">0</span>/5</div>
+    </div>
+  </div>
+
+  <div class="grid">
+    <div class="card">
+      <h2>Rete</h2>
+      <div class="row"><span class="k">Operatore</span><span class="v" id="f_operator">—</span></div>
+      <div class="row"><span class="k">Codice (MCC/MNC)</span><span class="v" id="f_plmn">—</span></div>
+      <div class="row"><span class="k">Tecnologia</span><span class="v" id="f_tech">—</span></div>
+      <div class="row"><span class="k">Stato</span><span class="v" id="f_conn">—</span></div>
+      <div class="row"><span class="k">Roaming</span><span class="v" id="f_roam">—</span></div>
+      <div class="row"><span class="k">IP WAN</span><span class="v" id="f_wan">—</span></div>
+    </div>
+
+    <div class="card">
+      <h2>Segnale</h2>
+      <div class="verdict">
+        <span class="q q-none" id="f_quality">—</span>
+        <span class="ql" id="f_quality_lbl"></span>
+      </div>
+      <div id="sigRows"></div>
+    </div>
+
+    <div class="card">
+      <h2>Traffico</h2>
+      <div class="rate">
+        <div><div class="big"><span class="arrow">↓</span> <span id="f_dr">0</span></div><div class="u" id="f_dru">kB/s</div></div>
+        <div><div class="big"><span class="arrow up">↑</span> <span id="f_ur">0</span></div><div class="u" id="f_uru">kB/s</div></div>
+      </div>
+      <div class="row"><span class="k">Sessione ↓/↑</span><span class="v" id="f_sess">—</span></div>
+      <div class="row"><span class="k">Totale ↓/↑</span><span class="v" id="f_tot">—</span></div>
+      <div class="row"><span class="k">Durata sessione</span><span class="v" id="f_dur">—</span></div>
+    </div>
+
+    <div class="card">
+      <h2>Dispositivo</h2>
+      <div class="row"><span class="k">Batteria</span><span class="v" id="f_batt">—</span></div>
+      <div class="row"><span class="k">Temperatura</span><span class="v" id="f_temp">—</span></div>
+      <div class="row"><span class="k">SIM</span><span class="v" id="f_sim">—</span></div>
+    </div>
+  </div>
+
+  <footer>
+    <span class="live"><span class="dot"></span><span id="footText">aggiornamento ogni 3 s</span></span>
+  </footer>
+</div>
+
+<script>
+const $ = id => document.getElementById(id);
+let paused = false, timer = null;
+const REFRESH = 3000;
+
+const dash = v => (v === undefined || v === null || v === "") ? null : v;
+
+function fmtBytes(n) {
+  n = Number(n); if (!isFinite(n) || n < 0) return "—";
+  const u = ["B","kB","MB","GB","TB"]; let i = 0;
+  while (n >= 1024 && i < u.length-1) { n /= 1024; i++; }
+  return (n < 10 && i > 0 ? n.toFixed(1) : Math.round(n)) + " " + u[i];
+}
+function fmtRate(bps) {
+  let n = Number(bps); if (!isFinite(n)) n = 0;
+  if (n >= 1024*1024) return [(n/1048576).toFixed(1), "MB/s"];
+  return [Math.round(n/1024).toString(), "kB/s"];
+}
+function fmtDur(s) {
+  s = Number(s); if (!isFinite(s) || s <= 0) return "—";
+  const h = Math.floor(s/3600), m = Math.floor(s%3600/60), x = s%60;
+  return (h?h+"h ":"") + (m?m+"m ":"") + x + "s";
+}
+
+function setPill(cls, text) {
+  const p = $("statusPill");
+  p.className = "pill " + cls;
+  $("statusText").textContent = text;
+}
+
+function render(d) {
+  if (!d.reachable) {
+    setPill("bad", "non raggiungibile");
+    $("sub").textContent = "Saponetta non collegata o spenta";
+    return;
+  }
+  const f = d.fields || {};
+  const conn = f.connection_status || "";
+  const simReady = ["ready", "valid"].includes(f.sim_status);
+  const noSim = !simReady;
+
+  // status pill
+  if (noSim) setPill("warn", "nessuna SIM");
+  else if (conn === "connected") setPill("ok", "connessa");
+  else if (f.network_type_code === "0" || f.network_type === "no_service") setPill("warn", "nessun servizio");
+  else setPill("warn", f.connection_status || "—");
+
+  $("sub").textContent = d.label || "pocket-wifi";
+  $("simBanner").classList.toggle("show", noSim);
+
+  // hero
+  const op = dash(f.operator);
+  $("heroOp").textContent = op || (sim === "255" ? "—" : "ricerca…");
+  $("f_operator").textContent = op || "—";
+  const tech = dash(f.network_type);
+  $("heroNet").textContent = tech ? tech : "nessun servizio";
+  $("f_tech").textContent = tech || "—";
+
+  const bars = Math.max(0, Math.min(5, parseInt(f.signal_bars || "0", 10) || 0));
+  $("heroBars").textContent = bars;
+  document.querySelectorAll("#bars i").forEach((el, i) => {
+    el.classList.toggle("on", i < bars);
+    el.style.height = (22 + i*8) + "px";
+  });
+
+  // network
+  $("f_plmn").textContent = dash(f.operator_numeric) || "—";
+  $("f_conn").textContent = f.connection_status || "—";
+  $("f_roam").textContent = f.roaming === "1" ? "sì" : (f.roaming === "0" ? "no" : "—");
+  $("f_wan").textContent = dash(f.wan_ip) || "—";
+
+  // signal quality verdict (LTE only; empty for 3G Huawei)
+  const QMAP = {
+    excellent: "eccellente", good: "buono", fair: "discreto",
+    poor: "scarso", very_poor: "pessimo",
+  };
+  const qv = $("f_quality");
+  const q = dash(f.sig_quality);
+  qv.className = "q q-" + (q || "none");
+  qv.textContent = q ? (QMAP[q] || q) : "—";
+  $("f_quality_lbl").textContent = q ? "qualità LTE (RSRP/SINR)" : "nessuna misura";
+
+  // signal rows: built from whatever the device actually reports. LTE fields
+  // (rsrp/rsrq/sinr) for the Alcatel, 3G fields (rscp/ecio/sc) for the Huawei;
+  // empty ones are skipped so each device shows a clean, relevant panel.
+  const SIG_SPEC = [
+    ["sig_band", "Banda", ""], ["sig_earfcn", "EARFCN", ""],
+    ["sig_rsrp", "RSRP", " dBm"], ["sig_rsrq", "RSRQ", " dB"],
+    ["sig_sinr", "SINR", " dB"], ["sig_rssi", "RSSI", " dBm"],
+    ["sig_rscp", "RSCP (3G)", " dBm"], ["sig_ecio", "Ec/Io (3G)", " dB"],
+    ["sig_cell_id", "Cell ID", ""], ["sig_enbid", "eNB ID", ""],
+    ["sig_sc", "Scrambling code", ""],
+  ];
+  const html = SIG_SPEC.map(([key, label, unit]) => {
+    const v = dash(f[key]);
+    if (v === null) return "";
+    const shown = /[a-zA-Z]/.test(String(v)) ? v : v + unit;
+    return `<div class="row"><span class="k">${label}</span><span class="v">${shown}</span></div>`;
+  }).join("");
+  $("sigRows").innerHTML = html || `<div class="row"><span class="k v muted">nessun dato segnale</span></div>`;
+
+  // traffic
+  const [dr, dru] = fmtRate(f.cur_download_rate_Bps);
+  const [ur, uru] = fmtRate(f.cur_upload_rate_Bps);
+  $("f_dr").textContent = dr; $("f_dru").textContent = dru;
+  $("f_ur").textContent = ur; $("f_uru").textContent = uru;
+  $("f_sess").textContent = (f.session_download_bytes !== undefined)
+    ? fmtBytes(f.session_download_bytes) + " / " + fmtBytes(f.session_upload_bytes) : "—";
+  $("f_tot").textContent = (f.total_download_bytes !== undefined)
+    ? fmtBytes(f.total_download_bytes) + " / " + fmtBytes(f.total_upload_bytes) : "—";
+  $("f_dur").textContent = fmtDur(f.session_connect_time_s);
+
+  // device
+  const batt = dash(f.batt_pct) ?? dash(f.battery_percent);
+  const plugged = f.batt_plugged || f.battery_charging === "1";
+  $("f_batt").textContent = batt != null ? batt + "%" + (plugged ? " ⚡" : "") : "—";
+  const tp = dash(f.batt_temp);
+  const tEl = $("f_temp");
+  tEl.textContent = tp != null ? tp + " °C" : "—";
+  tEl.style.color = (tp != null && tp >= 44) ? "var(--bad)" : (tp != null && tp >= 40) ? "var(--warn)" : "";
+  const simMap = {ready: "pronta", valid: "valida", absent: "assente"};
+  $("f_sim").textContent = simMap[f.sim_status] || dash(f.sim_status) || "—";
+}
+
+async function tick() {
+  try {
+    const r = await privateFetch("/data", {cache: "no-store"});
+    render(await r.json());
+  } catch (e) {
+    setPill("bad", "backend offline");
+  }
+}
+function loop() { if (!paused) tick(); timer = setTimeout(loop, REFRESH); }
+
+$("pauseBtn").addEventListener("click", () => {
+  paused = !paused;
+  $("pauseBtn").textContent = paused ? "Riprendi" : "Pausa";
+  $("app").classList.toggle("paused", paused);
+  $("footText").textContent = paused ? "in pausa" : "aggiornamento ogni 3 s";
+  if (!paused) tick();
+});
+
+// --- remote stop/resume of the phone sensor ---
+let ctrlStopped = false;
+async function refreshCtrl() {
+  try {
+    const s = await (await privateFetch("/control", {cache:"no-store"})).json();
+    ctrlStopped = !!s.stop;
+    const b = $("ctrlBtn");
+    b.textContent = ctrlStopped ? "▶ Riprendi sensore" : "⏹ Ferma sensore";
+    b.classList.toggle("danger", !ctrlStopped);
+    b.classList.toggle("on", ctrlStopped);
+  } catch (e) {}
+}
+async function privateFetch(path, options = {}) {
+  const headers = new Headers(options.headers || {});
+  const tok = localStorage.getItem("pw_token");
+  if (tok) headers.set("X-Token", tok);
+  let response = await fetch(path, {...options, headers});
+  if (response.status === 403) {
+    const entered = prompt("Token del collector:");
+    if (entered) {
+      localStorage.setItem("pw_token", entered);
+      headers.set("X-Token", entered);
+      response = await fetch(path, {...options, headers});
+    }
+  }
+  return response;
+}
+async function setStop(v) {
+  const headers = {"Content-Type":"application/json"};
+  const tok = localStorage.getItem("pw_token");
+  if (tok) headers["X-Token"] = tok;
+  try {
+    const r = await privateFetch("/control", {method:"POST", headers, body: JSON.stringify({stop:v})});
+    if (r.status === 403) {
+      const t = prompt("Token del collector (serve per comandare da remoto):");
+      if (t) { localStorage.setItem("pw_token", t); return setStop(v); }
+      return;
+    }
+  } catch (e) {}
+  refreshCtrl();
+}
+$("ctrlBtn").addEventListener("click", () => {
+  if (!ctrlStopped && !confirm("Fermare il sensore sul telefono? Si fermerà entro un ciclo.")) return;
+  setStop(!ctrlStopped);
+});
+
+tick();
+loop();
+refreshCtrl();
+setInterval(refreshCtrl, 5000);
+</script>
+</body>
+</html>
