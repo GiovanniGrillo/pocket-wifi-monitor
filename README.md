@@ -18,6 +18,20 @@ commit to a SIM or a contract.
 > **Status:** working prototype. The radio thresholds are heuristics; what you
 > can read depends on the modem, the Android version and the carrier.
 
+## Screenshots
+
+**Overview** — the live view: KPIs, interactive signal chart, quality mix and
+the realtime cards.
+
+![Overview dashboard](docs/dashboard-overview.jpg)
+
+**Analysis** — the usage-profile verdict plus day-by-day and hour-of-day
+patterns.
+
+![Analysis page](docs/analysis.jpg)
+
+<sub>Screenshots use synthetic, anonymized data — no real carrier or cell is shown.</sub>
+
 ## What it does
 
 - Measures **signal** (RSRP/RSRQ, band, cell), **connectivity** (does real
