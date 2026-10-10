@@ -3,19 +3,27 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="color-scheme" content="dark light">
+<meta name="color-scheme" content="light dark">
 <title>Reception statistics</title>
+<script>try{var _t=localStorage.getItem('pw_theme');if(_t)document.documentElement.dataset.theme=_t;}catch(e){}</script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
   :root{
-    --bg:#0a0d12;--panel:#0f141b;--panel-2:#121823;--line:#1d2531;--line-soft:#161d27;
-    --txt:#e7ebf1;--dim:#8b96a6;--faint:#58626f;--accent:#3fb950;--warn:#d6a01b;--bad:#ef4e3a;
+    /* palette shared across themes */
+    --accent:#3fb950;--warn:#d6a01b;--bad:#ef4e3a;
     --mono:"IBM Plex Mono",ui-monospace,Menlo,Consolas,monospace;
     --sans:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+    /* light default (matches the dashboard) */
+    --bg:#f3f5f8;--panel:#fff;--panel-2:#fbfcfe;--line:#e2e7ee;--line-soft:#edf0f4;
+    --txt:#0f141b;--dim:#596575;--faint:#8a94a2;
   }
-  @media (prefers-color-scheme:light){:root{--bg:#f3f5f8;--panel:#fff;--panel-2:#fbfcfe;--line:#e2e7ee;--line-soft:#edf0f4;--txt:#0f141b;--dim:#596575;--faint:#8a94a2;}}
+  /* dark tokens: auto (system) unless the user forced light, or explicit dark */
+  @media (prefers-color-scheme:dark){
+    :root:not([data-theme="light"]){--bg:#0a0d12;--panel:#0f141b;--panel-2:#121823;--line:#1d2531;--line-soft:#161d27;--txt:#e7ebf1;--dim:#8b96a6;--faint:#58626f;}
+  }
+  :root[data-theme="dark"]{--bg:#0a0d12;--panel:#0f141b;--panel-2:#121823;--line:#1d2531;--line-soft:#161d27;--txt:#e7ebf1;--dim:#8b96a6;--faint:#58626f;}
   *{box-sizing:border-box;}
   html{scroll-behavior:smooth;}
   body{margin:0;background:var(--bg);color:var(--txt);font-family:var(--sans);font-size:13px;line-height:1.5;-webkit-font-smoothing:antialiased;}
@@ -103,6 +111,7 @@
     <div><h1 id="t_title">Reception statistics</h1><p class="sub" id="sub">loading…</p></div>
     <div class="spacer"></div>
     <div class="seg" id="segDays"><button data-d="7">7</button><button data-d="30" class="on">30</button><button data-d="365" id="t_all">all</button></div>
+    <button class="btn" id="themeBtn" title="Theme" aria-label="Theme">🌙</button>
     <button class="btn" id="langBtn">🌐 IT</button>
     <a class="btn" href="/" id="t_live">◀ live</a>
   </header>
@@ -433,11 +442,14 @@ async function load(){
 
 $("segDays").addEventListener("click",e=>{const b=e.target.closest("button");if(!b)return;days=parseInt(b.dataset.d,10);[...$("segDays").children].forEach(x=>x.classList.toggle("on",x===b));load();});
 $("langBtn").addEventListener("click",()=>{lang=lang==="it"?"en":"it";localStorage.setItem("pw_lang",lang);render();});
+function curTheme(){return document.documentElement.dataset.theme||(matchMedia("(prefers-color-scheme:dark)").matches?"dark":"light");}
+function syncThemeBtn(){$("themeBtn").textContent=curTheme()==="dark"?"☀️":"🌙";}
+$("themeBtn").addEventListener("click",()=>{const t=curTheme()==="dark"?"light":"dark";document.documentElement.dataset.theme=t;try{localStorage.setItem("pw_theme",t);}catch(e){}syncThemeBtn();});
 $("profile").addEventListener("change",e=>{profile=e.target.value;localStorage.setItem("pw_profile",profile);$("customWrap").style.display=profile==="custom"?"":"none";render();});
 $("customMbps").addEventListener("input",render);
 $("dayStrip").addEventListener("click",e=>{const c=e.target.closest(".daycell");if(!c||!last)return;selectedDay=c.dataset.day;renderByDay(last);});
 
-fillLabels();load();setInterval(load,60000);
+fillLabels();syncThemeBtn();load();setInterval(load,60000);
 </script>
 </body>
 </html>
