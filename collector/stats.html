@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="color-scheme" content="light dark">
 <title>Reception statistics</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><defs><linearGradient id='g' x1='0' y1='0' x2='1' y2='1'><stop offset='0' stop-color='%23f7b733'/><stop offset='1' stop-color='%23f59e0b'/></linearGradient></defs><rect width='32' height='32' rx='7' fill='url(%23g)'/><text x='16' y='22' font-family='Arial,Helvetica,sans-serif' font-size='15' font-weight='bold' text-anchor='middle' fill='%233a2600'>PW</text></svg>">
 <script>try{var _t=localStorage.getItem('pw_theme');if(_t)document.documentElement.dataset.theme=_t;}catch(e){}</script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -461,7 +462,15 @@ function buildConclusions(h){
   else b.push(L(`<b>Speed</b>: not measured yet — run a stress test (needs ~${p.mbps} Mbps for this profile).`,`<b>Velocità</b>: non ancora misurata — fai uno stress test (servono ~${p.mbps} Mbps per questo profilo).`));
   let buf=null;
   if(latAdd!=null){buf=latAdd<=p.latSoft?"good":latAdd<=p.latHard?"borderline":"bad";b.push(L(`<b>Under load</b>: +${latAdd} ms → ${ {good:"stable",borderline:"some lag",bad:"stutters"}[buf] }.`,`<b>Sotto carico</b>: +${latAdd} ms → ${ {good:"stabile",borderline:"qualche lag",bad:"scatta"}[buf] }.`));}
-  if(h.trend)b.push("<b>"+L("Trend","Andamento")+"</b>: "+h.trend);
+  if(h.trend_dir){
+    const db=h.trend_db||0;
+    const txt=h.trend_dir==="flat"
+      ? L("essentially stable over the period.","sostanzialmente stabile nel periodo.")
+      : h.trend_dir==="up"
+        ? L(`improved by ~${db} dB since the start of the period.`,`migliorato di ~${db} dB dall'inizio del periodo.`)
+        : L(`weakened by ~${db} dB since the start of the period.`,`peggiorato di ~${db} dB dall'inizio del periodo.`);
+    b.push("<b>"+L("Trend","Andamento")+"</b>: "+txt);
+  }
   const level=WORST(cov,rel,thr,buf)||"unknown";
   return {level,bullets:b};
 }
