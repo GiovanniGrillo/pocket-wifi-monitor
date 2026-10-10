@@ -146,9 +146,6 @@
       <h1 class="page-title" id="t_title">Reception statistics</h1>
       <p class="page-sub" id="sub">loading…</p>
     </div>
-    <div class="hgroup-right">
-      <div class="seg" id="segDays"><button data-d="7">7</button><button data-d="30" class="on">30</button><button data-d="365" id="t_all">all</button></div>
-    </div>
   </div>
 
   <div class="controls">
@@ -175,8 +172,10 @@
   <div class="kpis" id="kpis"></div>
 
   <section class="card">
-    <h2 id="t_time">Signal over time</h2>
-    <p class="hint" id="h_time"></p>
+    <div class="card-head">
+      <div><h2 id="t_time">Signal over time</h2><p class="hint" id="h_time"></p></div>
+      <div class="seg" id="segDays"><button data-d="7">7</button><button data-d="30" class="on">30</button><button data-d="365" id="t_all">all</button></div>
+    </div>
     <div class="chartwrap" id="rsrpWrap">
       <svg id="rsrpChart" viewBox="0 0 800 220" preserveAspectRatio="none"></svg>
       <div class="charttip" id="rsrpTip" hidden></div>
