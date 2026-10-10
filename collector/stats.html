@@ -326,20 +326,71 @@ function renderMeter(h){
 }
 
 function renderRsrp(h){
-  const s=h.series||[],W=800,H=220,padL=40,padR=10,padT=10,padB=22,yMin=-120,yMax=-70;
-  const x=i=>padL+(s.length<=1?0:i*(W-padL-padR)/(s.length-1)),y=v=>padT+(yMax-v)*(H-padT-padB)/(yMax-yMin);
+  const s=h.series||[],W=800,H=220,padL=40,padR=12,padT=10,padB=28,yMin=-120,yMax=-70;
+  rsrpBucket=h.bucket||"hour";
+  const x=i=>padL+(s.length<=1?(W-padL-padR)/2:i*(W-padL-padR)/(s.length-1)),y=v=>padT+(yMax-v)*(H-padT-padB)/(yMax-yMin);
+  const baseY=H-padB;
   let g="";
   // quality zones
   const zones=[[-70,-95,"var(--accent)"],[-95,-105,"var(--warn)"],[-105,-120,"var(--bad)"]];
   zones.forEach(([a,b,c])=>{g+=`<rect x="${padL}" y="${y(a).toFixed(1)}" width="${W-padL-padR}" height="${(y(b)-y(a)).toFixed(1)}" fill="${c}" opacity="0.08"/>`;});
   for(let v=-70;v>=-120;v-=10){const yy=y(v);g+=`<text x="4" y="${yy+4}" fill="var(--faint)" font-size="10">${v}</text>`;}
+  // x axis + time labels
+  g+=`<line x1="${padL}" y1="${baseY}" x2="${W-padR}" y2="${baseY}" stroke="var(--line)"/>`;
+  const step=Math.max(1,Math.ceil(s.length/8));
+  s.forEach((p,i)=>{if(i%step===0||i===s.length-1){g+=`<text x="${x(i).toFixed(1)}" y="${H-8}" fill="var(--faint)" font-size="9.5" text-anchor="middle">${fmtTick(p.t)}</text>`;}});
+  // line segments (break on missing signal)
   let pts=[],segs=[];
   s.forEach((p,i)=>{if(p.rsrp_median==null){if(pts.length)segs.push(pts);pts=[];}else pts.push(`${x(i).toFixed(1)},${y(p.rsrp_median).toFixed(1)}`);});
   if(pts.length)segs.push(pts);
-  segs.forEach(seg=>g+=`<polyline points="${seg.join(' ')}" fill="none" stroke="var(--txt)" stroke-width="1.8"/>`);
-  $("rsrpChart").innerHTML=g||`<text x="400" y="110" fill="var(--faint)" font-size="13" text-anchor="middle">${L("no data yet","ancora nessun dato")}</text>`;
-  $("rsrpLegend").textContent=s.length?(h.bucket==="day"?L("daily median","media giornaliera"):L("hourly median","media oraria")):"";
+  segs.forEach(seg=>g+=`<polyline points="${seg.join(' ')}" fill="none" stroke="var(--txt)" stroke-width="1.8" stroke-linejoin="round"/>`);
+  // points + record hover geometry
+  rsrpPts=[];
+  s.forEach((p,i)=>{const cx=x(i);
+    if(p.rsrp_median==null){
+      if(p.n)g+=`<circle cx="${cx.toFixed(1)}" cy="${(baseY-3).toFixed(1)}" r="2" fill="none" stroke="var(--faint)" stroke-width="1"/>`;
+      rsrpPts.push({cx,cy:baseY,p});
+    }else{const cy=y(p.rsrp_median);
+      g+=`<circle cx="${cx.toFixed(1)}" cy="${cy.toFixed(1)}" r="2.2" fill="var(--txt)"/>`;
+      rsrpPts.push({cx,cy,p});
+    }});
+  // crosshair (revealed on hover)
+  g+=`<line id="rsrpCross" x1="0" y1="${padT}" x2="0" y2="${baseY}" stroke="var(--faint)" stroke-width="1" stroke-dasharray="3 3" visibility="hidden"/>`;
+  g+=`<circle id="rsrpDot" r="3.4" fill="none" stroke="var(--txt)" stroke-width="1.6" visibility="hidden"/>`;
+  $("rsrpChart").innerHTML=s.length?g:`<text x="400" y="110" fill="var(--faint)" font-size="13" text-anchor="middle">${L("no data yet","ancora nessun dato")}</text>`;
+  $("rsrpLegend").textContent=s.length?(rsrpBucket==="day"?L("daily median · hover for details","media giornaliera · passa il cursore per i dettagli"):L("hourly median · hover for details","media oraria · passa il cursore per i dettagli")):"";
 }
+
+function fmtTick(t){
+  const d=new Date(t);
+  if(rsrpBucket==="day")return d.toLocaleDateString(lang==="it"?"it-IT":"en-GB",{day:"2-digit",month:"2-digit"});
+  return String(d.getHours()).padStart(2,"0");
+}
+function rsrpHover(ev){
+  if(!rsrpPts.length)return;
+  const svg=$("rsrpChart"),r=svg.getBoundingClientRect();
+  const vbX=(ev.clientX-r.left)/r.width*800;
+  let best=null,bd=1e9;
+  for(const pt of rsrpPts){const d=Math.abs(pt.cx-vbX);if(d<bd){bd=d;best=pt;}}
+  if(!best)return;
+  const cross=$("rsrpCross");if(cross){cross.setAttribute("x1",best.cx.toFixed(1));cross.setAttribute("x2",best.cx.toFixed(1));cross.setAttribute("visibility","visible");}
+  const dot=$("rsrpDot"),hasSig=best.p.rsrp_median!=null;
+  if(dot){dot.setAttribute("cx",best.cx.toFixed(1));dot.setAttribute("cy",best.cy.toFixed(1));dot.setAttribute("visibility",hasSig?"visible":"hidden");}
+  const p=best.p,d=new Date(p.t);
+  const when=rsrpBucket==="day"
+    ? d.toLocaleDateString(lang==="it"?"it-IT":"en-GB",{weekday:"short",day:"2-digit",month:"2-digit"})
+    : `${d.toLocaleDateString(lang==="it"?"it-IT":"en-GB",{day:"2-digit",month:"2-digit"})} ${String(d.getHours()).padStart(2,"0")}:00`;
+  const sigLine=hasSig
+    ? `<span class="tv">${p.rsrp_median} dBm · ${sig(p.rsrp_median).w}</span>`
+    : `<span class="tm">${L("signal not reported (screen-off)","segnale non riportato (schermo spento)")}</span>`;
+  const tip=$("rsrpTip");
+  tip.innerHTML=`<div class="tw">${when}</div>${sigLine}<br><span class="tm">${p.n} ${L("samples","campioni")} · ${L("data ok","dato ok")} ${p.ok_rate}%</span>`;
+  tip.hidden=false;
+  const wrapR=$("rsrpWrap").getBoundingClientRect();
+  tip.style.left=((best.cx/800)*r.width+(r.left-wrapR.left)).toFixed(1)+"px";
+  tip.style.top=((best.cy/220)*r.height+(r.top-wrapR.top)).toFixed(1)+"px";
+}
+function rsrpLeave(){$("rsrpTip").hidden=true;const c=$("rsrpCross");if(c)c.setAttribute("visibility","hidden");const d=$("rsrpDot");if(d)d.setAttribute("visibility","hidden");}
 
 function renderHour(h){
   const bh=h.by_hour||[],W=800,H=150,padL=26,padR=8,padT=8,padB=22;
@@ -486,6 +537,9 @@ $("themeBtn").addEventListener("click",()=>{const t=curTheme()==="dark"?"light":
 $("profile").addEventListener("change",e=>{profile=e.target.value;localStorage.setItem("pw_profile",profile);$("customWrap").style.display=profile==="custom"?"":"none";render();});
 $("customMbps").addEventListener("input",render);
 $("dayStrip").addEventListener("click",e=>{const c=e.target.closest(".daycell");if(!c||!last)return;selectedDay=c.dataset.day;renderByDay(last);});
+$("rsrpChart").addEventListener("pointermove",rsrpHover);
+$("rsrpChart").addEventListener("pointerleave",rsrpLeave);
+$("rsrpChart").addEventListener("pointerdown",rsrpHover);
 
 fillLabels();syncThemeBtn();load();setInterval(load,60000);
 </script>
