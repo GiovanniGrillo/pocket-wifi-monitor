@@ -163,67 +163,62 @@ Honest note: a **non-rooted** Android cannot power itself off from an app; there
 the agent does the most it can (stop + sleep + alert) and the real last line of
 defence is the phone's own hardware thermal protection.
 
-- **Avviso** (`--max-temp`, default 44 °C): continua a monitorare ma marca il
-  campione come "caldo" (visibile sulla dashboard).
-- **Emergenza** (`--shutdown-temp`, default 46 °C, per alcune letture
-  consecutive): manda un allarme, rilascia il wake-lock così il telefono va in
-  sonno e si raffredda, e — **solo se il dispositivo è rootato** — lo **spegne**
-  (`su -c 'svc power shutdown'`).
+## Interpreting the numbers
 
-Nota onesta: un Android **non rootato non può autospegnersi** da un'app; lì
-l'agente fa il massimo consentito (stop + sonno + allarme) e la vera ultima
-difesa resta la **protezione termica hardware** del telefono, che a temperature
-critiche spegne da sé a prescindere.
+- **RSRP:** roughly `≥ -90 dBm` good, `-90/-100` fair, `-100/-110` poor, below
+  `-110` critical.
+- **SINR:** higher is cleaner/faster; near zero or negative can be slow even
+  with an acceptable RSRP. (Many phones, including MIUI, don't report SINR.)
+- A sub-GHz band (e.g. B20 / 800 MHz) tends to reach further and through walls,
+  but does not guarantee high throughput on its own.
+- `HTTP 204` proves traffic works, not how fast it is — use the stress test with
+  an explicit budget for throughput.
+- **Signal gaps at night** are usually a *reporting* gap, not lost data: with the
+  screen off in deep sleep Android may stop returning cell info while uplink
+  keeps working. See `docs/PHONE.md`.
 
-## Test opzionali
+## Security & data
 
-Segnale via USB/ADB:
+This repo is meant to be public, but real samples are **not**: they can contain
+the carrier, cell identifiers, timings and battery state. The `data/` directory
+is git-ignored and ships only a `.gitkeep`.
+
+The token travels in the `X-Token` header — never put tokens, Tailscale IPs,
+carriers or real logs in scripts, issues or commits. The collector refuses to
+start exposed without `--token` and protects both the write and the read APIs.
+It speaks **plain HTTP**: confidentiality in transit relies on Tailscale's
+WireGuard encryption. Don't expose the collector on a public interface without a
+TLS reverse proxy; for defence in depth you can bind it to the Tailscale address
+only:
+
+```bash
+python3 collector/collector.py --bind "$(tailscale ip -4 | head -1)" --token "$POCKET_WIFI_TOKEN"
+```
+
+## Optional tools
+
+Signal over USB/ADB (no Termux):
 
 ```bash
 python3 tools/adb_signal.py --loop --interval 5 --csv
 ```
 
-Throughput e bufferbloat via tethering USB (il default può usare fino a 300 MB;
-il tetto `--budget-mb` è approssimato alla granularità del blocco scaricato):
+Throughput and bufferbloat over USB tethering (defaults can use up to ~300 MB;
+the `--budget-mb` cap is approximate to the downloaded-chunk granularity):
 
 ```bash
 python3 tools/stresstest.py --budget-mb 100 --phase 20
 ```
 
-Controlla il budget del tuo piano e interrompi con `Ctrl-C` quando necessario.
+## Extending it
 
-## Sviluppare e riusare il progetto
+To add a new sensor, keep the JSON sample contract: `timestamp`, `source`, your
+metrics and `http_ok`. The collector accepts extra fields without migrations;
+the dashboard uses the ones it recognises. Keep the transport separate from
+collection so the outbox keeps working offline, and never put real data in
+fixtures — use synthetic carriers, IDs and timestamps.
 
-Per aggiungere un nuovo sensore, mantieni il contratto di un campione JSON:
-`timestamp`, `source`, eventuali metriche e `http_ok`. Il collector accetta
-campi aggiuntivi senza migrazioni; la dashboard usa quelli che riconosce.
+## License
 
-Percorso consigliato:
-
-1. Estrai la lettura hardware in un modulo senza rete.
-2. Riusa `bands.py` o aggiungi un parser specifico con test di esempio
-   anonimizzati.
-3. Mantieni il trasporto separato dalla raccolta: l'outbox deve continuare a
-   funzionare anche senza connessione.
-4. Aggiungi test per parser e soglie prima di modificare la dashboard.
-5. Non includere mai dati reali nei fixture: sostituisci operatori, ID e
-   timestamp con valori sintetici.
-
-## Pubblicazione consigliata
-
-La cronologia dovrebbe essere composta da piccoli commit indipendenti:
-
-1. `chore: add public repository hygiene`
-2. `refactor: move runtime configuration to environment`
-3. `fix: protect collector read APIs`
-4. `docs: document Termux and reproducible setup`
-5. `test: add parser and signal classification coverage`
-
-Prima del primo push esegui `git status`, controlla `git diff --cached` e verifica
-che `data/` e i log non siano inclusi. Pubblica solo codice, documentazione,
-esempi redatti e test sintetici.
-
-## Licenza
-
-Distribuito sotto licenza **MIT**: vedi [`LICENSE`](LICENSE). In breve: puoi
-usare, modificare e ridistribuire il codice, senza garanzie.
+Released under the **MIT** license: see [`LICENSE`](LICENSE). In short: use,
+modify and redistribute freely, without warranty.
