@@ -431,6 +431,7 @@ def main():
 
     over_hot = 0
     last_stress_id = None
+    agent_started = time.monotonic()   # for "how long the agent has been running"
     while True:
         sample = {"timestamp": datetime.now(timezone.utc).isoformat(), "source": args.name,
                   "sim_status": "ready"}
@@ -438,6 +439,7 @@ def main():
         sample.update(http_check())
         sample.update(read_battery())
         sample["connection_status"] = "connected" if sample.get("http_ok") else "disconnected"
+        sample["agent_uptime_s"] = round(time.monotonic() - agent_started)
 
         temp = sample.get("batt_temp")
         hot = isinstance(temp, (int, float)) and temp >= args.max_temp
