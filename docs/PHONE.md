@@ -62,6 +62,18 @@ store-and-forward li ha inviati, manca solo il numero del segnale, e non è
 recuperabile a posteriori perché il sistema non l'ha mai prodotto.
 
 Per ridurre i buchi (soprattutto di notte):
+
+1. concedi a **Termux:API** la posizione come **"Consenti sempre"**, non "solo
+   mentre usi l'app": l'API della cella richiede la posizione in background;
+2. imposta la batteria su **nessuna restrizione** anche per **Termux:API**, non
+   solo per Termux;
+3. su alcune MIUI/HyperOS tieni attivo l'**autostart** per Termux:API;
+4. il wake-lock mantiene sveglia la CPU ma non sblocca da solo la posizione in
+   doze: serve il permesso "Consenti sempre" del punto 1.
+
+Non è garantito al 100% — in sospensione profonda Android può comunque limitare
+l'API — ma di norma recupera gran parte delle ore notturne.
+
 ## Avvio automatico
 
 Con Termux:Boot:
