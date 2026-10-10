@@ -148,72 +148,79 @@
     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 9v4m0 4h.01M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0Z"/></svg>
     <div id="simBannerText"></div>
   </div>
-
   <div class="banner" id="alertBanner"></div>
 
-  <div class="hero">
-    <div class="bars" id="bars"><i></i><i></i><i></i><i></i><i></i></div>
-    <div class="hero-main">
-      <div class="hero-op" id="heroOp">—</div>
-      <div class="hero-net" id="heroNet">nessun servizio</div>
+  <div class="hgroup">
+    <div>
+      <h1 class="page-title" id="heroOp">—</h1>
+      <p class="page-sub"><span id="heroNet">—</span> · <span id="sub">—</span></p>
     </div>
-    <div class="hero-right">
-      <div class="lbl" data-i18n="signal">Signal</div>
-      <div class="val"><span id="heroBars">0</span>/5</div>
+    <div class="hgroup-right">
+      <span class="datepill">⟳ <span id="c_age">—</span></span>
     </div>
   </div>
 
   <div class="grid">
-    <div class="card">
-      <h2 data-i18n="card_network">Network</h2>
-      <div class="row"><span class="k" data-i18n="k_operator">Operator</span><span class="v" id="f_operator">—</span></div>
-      <div class="row"><span class="k" data-i18n="k_plmn">Code (MCC/MNC)</span><span class="v" id="f_plmn">—</span></div>
-      <div class="row"><span class="k" data-i18n="k_tech">Technology</span><span class="v" id="f_tech">—</span></div>
-      <div class="row"><span class="k" data-i18n="k_status">Status</span><span class="v" id="f_conn">—</span></div>
-    </div>
-
-    <div class="card">
-      <h2 data-i18n="signal">Signal</h2>
-      <div class="verdict">
-        <span class="q q-none" id="f_quality">—</span>
-        <span class="ql" id="f_quality_lbl"></span>
+    <!-- Signal (hero) -->
+    <section class="card c-8">
+      <div class="card-head"><h2 data-i18n="signal">Signal</h2><div class="menu">⋯</div></div>
+      <div class="sig-top">
+        <div class="verdict-chip"><span class="q q-none" id="f_quality">—</span><span class="ql" id="f_quality_lbl"></span></div>
+        <div class="bars-wrap">
+          <div class="bars" id="bars"><i></i><i></i><i></i><i></i><i></i></div>
+          <div class="bars-n"><span id="heroBars">0</span><small>/5</small></div>
+        </div>
       </div>
-      <div id="sigRows"></div>
-    </div>
+      <div class="rows" id="sigRows"></div>
+    </section>
 
-    <div class="card">
-      <h2 data-i18n="card_conn">Connectivity (data)</h2>
-      <div class="rate">
+    <!-- Network -->
+    <section class="card c-4">
+      <div class="card-head"><h2 data-i18n="card_network">Network</h2><div class="menu">⋯</div></div>
+      <div class="rows">
+        <div class="row"><span class="k" data-i18n="k_operator">Operator</span><span class="v" id="f_operator">—</span></div>
+        <div class="row"><span class="k" data-i18n="k_plmn">Code (MCC/MNC)</span><span class="v" id="f_plmn">—</span></div>
+        <div class="row"><span class="k" data-i18n="k_tech">Technology</span><span class="v" id="f_tech">—</span></div>
+        <div class="row"><span class="k" data-i18n="k_status">Status</span><span class="v" id="f_conn">—</span></div>
+      </div>
+    </section>
+
+    <!-- Connectivity -->
+    <section class="card c-4">
+      <div class="card-head"><h2 data-i18n="card_conn">Connectivity (data)</h2><div class="menu">⋯</div></div>
+      <div class="stat2">
         <div><div class="big" id="c_http">—</div><div class="u" data-i18n="u_http">HTTP response</div></div>
         <div><div class="big" id="c_lat">—</div><div class="u" data-i18n="u_lat">latency</div></div>
       </div>
-      <div class="row"><span class="k" data-i18n="k_dataok">Data works</span><span class="v" id="c_ok">—</span></div>
-      <div class="row"><span class="k" data-i18n="k_link">Link state</span><span class="v" id="c_link">—</span></div>
-      <div class="row"><span class="k" data-i18n="k_updated">Last update</span><span class="v" id="c_age">—</span></div>
-    </div>
+      <div class="catline"><span class="cl-k" data-i18n="k_dataok">Data works</span><span class="cl-v" id="c_ok" style="color:var(--green)">—</span></div>
+      <div class="catline"><span class="cl-k" data-i18n="k_link">Link state</span><span class="cl-v" id="c_link" style="color:var(--blue)">—</span></div>
+    </section>
 
-    <div class="card">
-      <h2 data-i18n="card_device">Device</h2>
-      <div class="row"><span class="k" data-i18n="k_batt">Battery</span><span class="v" id="f_batt">—</span></div>
-      <div class="row"><span class="k" data-i18n="k_temp">Temperature</span><span class="v" id="f_temp">—</span></div>
-      <div class="row"><span class="k" data-i18n="k_sim">SIM</span><span class="v" id="f_sim">—</span></div>
-    </div>
+    <!-- Device -->
+    <section class="card c-4">
+      <div class="card-head"><h2 data-i18n="card_device">Device</h2><div class="menu">⋯</div></div>
+      <div class="rows">
+        <div class="row"><span class="k" data-i18n="k_batt">Battery</span><span class="v" id="f_batt">—</span></div>
+        <div class="row"><span class="k" data-i18n="k_temp">Temperature</span><span class="v" id="f_temp">—</span></div>
+        <div class="row"><span class="k" data-i18n="k_sim">SIM</span><span class="v" id="f_sim">—</span></div>
+      </div>
+    </section>
 
-    <div class="card">
-      <h2 data-i18n="card_stress">Stress test (mobile link)</h2>
-      <div class="verdict"><span class="q q-none" id="st_verdict">—</span><span class="ql" id="st_verdict_lbl"></span></div>
-      <div class="row"><span class="k" data-i18n="k_dl">Download</span><span class="v" id="st_mbps">—</span></div>
-      <div class="row"><span class="k" data-i18n="k_latload">Latency idle→load</span><span class="v" id="st_lat">—</span></div>
-      <div class="row"><span class="k" data-i18n="k_dataused">Data used</span><span class="v" id="st_data">—</span></div>
-      <div class="row"><span class="k" data-i18n="k_when">When</span><span class="v" id="st_when">—</span></div>
-      <button class="ghost" id="stressBtn" style="margin-top:12px;width:100%;justify-content:center">▶ Run stress test</button>
-      <div id="st_status" style="font-size:11px;color:var(--faint);margin-top:7px;min-height:14px"></div>
-    </div>
+    <!-- Stress test -->
+    <section class="card c-4">
+      <div class="card-head"><h2 data-i18n="card_stress">Stress test</h2><div class="menu">⋯</div></div>
+      <div class="hero-num" id="st_mbps">—</div>
+      <div style="margin:4px 0 12px"><span class="q q-none" id="st_verdict" style="font-weight:700">—</span> <span class="u" id="st_verdict_lbl" style="color:var(--faint);font-size:11.5px"></span></div>
+      <div class="catline"><span class="cl-k" data-i18n="k_latload">Latency idle→load</span><span class="cl-v v" id="st_lat">—</span></div>
+      <div class="catline"><span class="cl-k" data-i18n="k_dataused">Data used</span><span class="cl-v v" id="st_data">—</span></div>
+      <div class="catline"><span class="cl-k" data-i18n="k_when">When</span><span class="cl-v v" id="st_when">—</span></div>
+      <button class="ghost btn-wide" id="stressBtn">▶ Run stress test</button>
+      <div id="st_status" style="font-size:11px;color:var(--faint);margin-top:8px;min-height:14px"></div>
+    </section>
   </div>
 
-  <footer>
-    <span class="live"><span class="dot"></span><span id="footText">aggiornamento ogni 3 s</span></span>
-  </footer>
+  <footer><span class="live"><span class="dot"></span><span id="footText">updating every 3 s</span></span></footer>
+ </div>
 </div>
 
 <script>
