@@ -207,6 +207,23 @@ def _load_samples(days: int):
     return out
 
 
+def _recent(n: int, days: int = 2) -> list:
+    """The last `n` stored samples, newest first, compacted for the UI table."""
+    rows = []
+    for _dt, d in _load_samples(days):
+        rows.append({
+            "t": d.get("timestamp"),
+            "operator": d.get("operator"),
+            "net": d.get("network_type"),
+            "band": d.get("sig_band"),
+            "rsrp": d.get("sig_rsrp"),
+            "http": d.get("http_code"),
+            "http_ok": d.get("http_ok"),
+        })
+    rows.reverse()
+    return rows[:n]
+
+
 def _conclusions(h: dict) -> list:
     """Plain-language takeaways from the aggregates (rule-based, Italian)."""
     c = []
