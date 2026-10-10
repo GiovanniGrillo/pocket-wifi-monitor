@@ -42,13 +42,13 @@
   /* ---- shell: sidebar + content ---- */
   .shell{display:flex;min-height:100vh;}
   .sidebar{width:232px;flex:none;position:sticky;top:0;align-self:flex-start;height:100vh;
-    display:flex;flex-direction:column;gap:6px;padding:20px 16px;background:var(--app);border-right:1px solid var(--line);}
+    display:flex;flex-direction:column;gap:6px;padding:20px 16px;background:var(--bg);border-right:1px solid var(--line);}
   .brand{display:flex;align-items:center;gap:10px;font-weight:800;font-size:15px;letter-spacing:-.2px;padding:4px 8px 16px;}
   .logo{width:30px;height:30px;border-radius:9px;background:linear-gradient(140deg,#f7b733,#f59e0b);display:grid;place-items:center;color:#3a2600;font-weight:800;font-size:12px;box-shadow:inset 0 0 0 1px rgba(255,255,255,.3);}
   .side-nav{display:flex;flex-direction:column;gap:3px;}
   .side-link{display:flex;align-items:center;gap:10px;font-size:13px;font-weight:600;color:var(--muted);padding:9px 12px;border-radius:10px;transition:background .15s,color .15s;cursor:pointer;}
   .side-link:hover{color:var(--ink);background:var(--panel-2);}
-  .side-link.active{background:var(--ink-pill);color:var(--pill-ink);}
+  .side-link.active{color:var(--ink);background:var(--panel-2);box-shadow:inset 2px 0 0 var(--ink);}
   .side-link .ic{width:16px;text-align:center;opacity:.9;}
   .side-foot{margin-top:auto;display:flex;flex-direction:column;gap:8px;padding-top:12px;border-top:1px solid var(--line);}
   .side-age{font-size:11.5px;color:var(--faint);font-weight:600;padding-left:4px;}
@@ -64,9 +64,10 @@
   .tb-actions{display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
   .iconbtn{display:none;font:inherit;font-size:18px;line-height:1;background:var(--panel);border:1px solid var(--line);border-radius:10px;color:var(--ink);width:38px;height:38px;cursor:pointer;}
 
-  .seg{display:inline-flex;border:1px solid var(--line);border-radius:999px;overflow:hidden;background:var(--panel);}
-  .seg button{font:inherit;font-size:12px;font-weight:600;background:transparent;color:var(--muted);border:0;padding:7px 12px;cursor:pointer;}
-  .seg button.on{background:var(--ink-pill);color:var(--pill-ink);}
+  .seg{display:inline-flex;align-items:baseline;gap:15px;border:0;background:none;}
+  .seg button{font:inherit;font-size:12.5px;font-weight:600;background:none;color:var(--faint);border:0;padding:3px 0;cursor:pointer;transition:color .15s;letter-spacing:.2px;}
+  .seg button:hover{color:var(--muted);}
+  .seg button.on{color:var(--ink);box-shadow:inset 0 -2px 0 var(--ink);font-weight:700;}
 
   button.ghost,a.ghost{font:inherit;font-size:12px;font-weight:600;color:var(--muted);background:var(--panel);border:1px solid var(--line);border-radius:999px;padding:7px 12px;cursor:pointer;display:inline-flex;align-items:center;gap:5px;transition:background .15s,border-color .15s,color .15s;}
   button.ghost:hover,a.ghost:hover{color:var(--ink);background:var(--panel-2);}
@@ -206,7 +207,7 @@
     <nav class="side-nav">
       <a class="side-link active" href="#top"><span class="ic">▚</span><span data-i18n="nav_overview">Overview</span></a>
       <a class="side-link" href="/stats"><span class="ic">▤</span><span data-i18n="nav_analytics">Analytics</span></a>
-      <a class="side-link" href="#dataSection"><span class="ic">▦</span><span data-i18n="nav_data">Data</span></a>
+      <a class="side-link" href="/explore"><span class="ic">▦</span><span data-i18n="nav_data">Data</span></a>
       <a class="side-link" href="#settingsSection"><span class="ic">⚙</span><span data-i18n="nav_settings">Settings</span></a>
     </nav>
     <div class="side-foot">
