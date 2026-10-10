@@ -98,40 +98,38 @@ python3 -c 'import secrets; print(secrets.token_urlsafe(32))'
 
 ## Install the agent (phone / Termux)
 
-Questa procedura è adatta anche a un vecchio Xiaomi con Android 5G; i nomi dei
-menu possono cambiare a seconda della MIUI/HyperOS.
+This works on an old Xiaomi too; MIUI/HyperOS menu names may differ. The full
+walkthrough is in [`docs/PHONE.md`](docs/PHONE.md).
 
-1. Installa **Termux** e **Termux:API** da F-Droid. Le due app devono provenire
-   dalla stessa fonte/versione.
-2. Installa Tailscale sul telefono, accedi allo stesso tailnet del PC e verifica
-   che il PC risponda al suo IP `100.x.y.z`.
-3. In Termux esegui:
+1. Install **Termux** and **Termux:API** from F-Droid (same source/version).
+2. Install Tailscale, join the same tailnet as the PC, confirm the PC answers at
+   its `100.x.y.z` address.
+3. In Termux:
 
    ```bash
-   pkg update
-   pkg install python termux-api
+   pkg update && pkg install python termux-api
    termux-setup-storage
    ```
 
-4. Concedi a Termux:API i permessi Telefono e Posizione. Android può revocarli
-   dopo periodi di inattività: controllali se i campi radio risultano vuoti.
-5. Copia `phone_agent.py`, `bands.py` e `run_agent.sh` nella cartella
-   `Download` condivisa del telefono.
-6. In Termux, **non mettere i valori sensibili nel file copiato**:
+4. Grant Termux:API the **Phone** and **Location** permissions. For readings to
+   keep coming in with the screen off, set Location to **"Allow all the time"**
+   and lift battery optimization for Termux and Termux:API.
+5. Copy `phone_agent.py`, `bands.py` and `run_agent.sh` into the shared
+   `Download` folder.
+6. In Termux — **never put secrets in the copied files**:
 
    ```bash
    export POCKET_WIFI_COLLECTOR='http://100.x.y.z:8099'
-   export POCKET_WIFI_TOKEN='lo-stesso-token-del-PC'
+   export POCKET_WIFI_TOKEN='the-same-token-as-the-PC'
    bash ~/storage/shared/Download/run_agent.sh
    ```
 
-   Lascia il telefono sotto carica e usa `termux-wake-lock` per evitare la
-   sospensione durante il test. `--interval` predefinito è 15 secondi nello
-   script di avvio; aumentalo se vuoi ridurre consumo e traffico.
+   Keep the phone charging; `run_agent.sh` holds a `termux-wake-lock` so it keeps
+   sampling with the screen off.
 
-### Avvio dopo il riavvio
+### Auto-start after reboot
 
-Installa l'app **Termux:Boot**, aprila una volta, poi:
+Install **Termux:Boot**, open it once, then:
 
 ```bash
 mkdir -p ~/.termux/boot
@@ -139,35 +137,31 @@ cp ~/storage/shared/Download/boot-start-agent.sh ~/.termux/boot/start-agent.sh
 chmod +x ~/.termux/boot/start-agent.sh
 ```
 
-Salva le due variabili `POCKET_WIFI_COLLECTOR` e `POCKET_WIFI_TOKEN` in
-`~/.profile` (con permessi limitati) prima di usare Termux:Boot. Disabilita
-l'ottimizzazione batteria per Termux, Termux:API e Tailscale se il telefono
-interrompe il processo in background.
+Store `POCKET_WIFI_COLLECTOR` and `POCKET_WIFI_TOKEN` in `~/.profile` (restricted
+permissions), not in a public repo.
 
-## Interpretare i risultati
+## Remote control & thermal safety
 
-- RSRP: circa `>= -90 dBm` buono, `-90/-100` discreto, `-100/-110` scarso,
-  sotto `-110` critico.
-- SINR positivo e alto indica una qualità migliore; vicino a zero o negativo
-  può ridurre la velocità anche con RSRP accettabile.
-- Una banda sub-GHz (per esempio B20 800 MHz) tende a propagarsi meglio, ma non
-  garantisce da sola prestazioni elevate.
-- `http 204` misura che il traffico funziona, non la velocità disponibile.
-  Per la velocità usa lo stress test con un budget dati esplicito.
+From the dashboard (or `POST /control`), even from outside the house, you can:
 
-## Controllo remoto e sicurezza del sensore
+- **Stop / resume** the sensor: raises a flag the phone reads on its next cycle
+  and exits cleanly.
+- Launch an **on-demand stress test** (multi-stream download + latency under
+  load) with a data budget chosen at the time; the result comes back on the
+  dashboard.
 
-Dalla dashboard (o via `POST /control`) puoi, anche da fuori casa:
+The agent also has a two-stage **thermal safety**, useful when you are not on
+site:
 
-- **Fermare/riprendere** il sensore: alza un flag che il telefono legge al ciclo
-  successivo e termina in modo pulito. Utile per interrompere da remoto.
-- **Avviare uno stress test** on-demand sulla rete mobile del telefono (download
-  a più flussi + latenza sotto carico), con un **budget dati** scelto al momento;
-  il risultato torna nella dashboard. Misura la rete reale del posto, non il
-  tethering.
+- **Warning** (`--max-temp`, default 44 °C): keeps monitoring but flags the
+  sample as "hot" (shown on the dashboard).
+- **Emergency** (`--shutdown-temp`, default 46 °C, for a few consecutive
+  readings): raises an alert, releases the wake-lock so the phone sleeps and
+  cools, and — **only if the device is rooted** — shuts it down.
 
-L'agente ha inoltre una **sicurezza termica automatica** a due soglie, utile
-quando non sei sul posto:
+Honest note: a **non-rooted** Android cannot power itself off from an app; there
+the agent does the most it can (stop + sleep + alert) and the real last line of
+defence is the phone's own hardware thermal protection.
 
 - **Avviso** (`--max-temp`, default 44 °C): continua a monitorare ma marca il
   campione come "caldo" (visibile sulla dashboard).
