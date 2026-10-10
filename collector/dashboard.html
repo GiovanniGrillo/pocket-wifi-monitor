@@ -231,11 +231,11 @@ const dash = v => (v === undefined || v === null || v === "") ? null : v;
 
 let lang = localStorage.getItem("pw_lang") || "en";
 const T = {
-  en:{stats_link:"Statistics ▸",pause:"Pause",resume:"Resume",signal:"Signal",
+  en:{stats_link:"Statistics",pause:"Pause",resume:"Resume",signal:"Signal",
       card_network:"Network",k_operator:"Operator",k_plmn:"Code (MCC/MNC)",k_tech:"Technology",k_status:"Status",
       card_conn:"Connectivity (data)",u_http:"HTTP response",u_lat:"latency",k_dataok:"Data works",k_link:"Link state",k_updated:"Last update",
       card_device:"Device",k_batt:"Battery",k_temp:"Temperature",k_sim:"SIM",
-      card_stress:"Stress test (mobile link)",k_dl:"Download",k_latload:"Latency idle→load",k_dataused:"Data used",k_when:"When",
+      card_stress:"Stress test",k_dl:"Download",k_latload:"Latency idle→load",k_dataused:"Data used",k_when:"When",
       banner:"<b>No SIM detected.</b> The dashboard is ready: signal, operator and cell will appear as soon as a SIM is inserted and the device registers.",
       unreachable:"not reachable",device_off:"phone not connected or off",no_sim:"no SIM",connected:"connected",no_service:"no service",searching:"searching…",
       pill_stopped:"stopped (overheat)",
@@ -250,11 +250,11 @@ const T = {
       q:{excellent:"excellent",good:"good",fair:"fair",poor:"poor",very_poor:"very poor"},
       sim:{ready:"ready",valid:"valid",absent:"absent"},
       sv:{good:"good",borderline:"borderline",bad:"weak"}},
-  it:{stats_link:"Statistiche ▸",pause:"Pausa",resume:"Riprendi",signal:"Segnale",
+  it:{stats_link:"Statistiche",pause:"Pausa",resume:"Riprendi",signal:"Segnale",
       card_network:"Rete",k_operator:"Operatore",k_plmn:"Codice (MCC/MNC)",k_tech:"Tecnologia",k_status:"Stato",
       card_conn:"Connettività (dato)",u_http:"risposta HTTP",u_lat:"latenza",k_dataok:"Il dato passa",k_link:"Stato link",k_updated:"Ultimo aggiornamento",
       card_device:"Dispositivo",k_batt:"Batteria",k_temp:"Temperatura",k_sim:"SIM",
-      card_stress:"Stress test (rete mobile)",k_dl:"Download",k_latload:"Latenza idle→carico",k_dataused:"Dati usati",k_when:"Quando",
+      card_stress:"Stress test",k_dl:"Download",k_latload:"Latenza idle→carico",k_dataused:"Dati usati",k_when:"Quando",
       banner:"<b>Nessuna SIM rilevata.</b> La dashboard è pronta: segnale, operatore e cella compariranno appena inserisci una SIM e il device si aggancia alla rete.",
       unreachable:"non raggiungibile",device_off:"telefono non collegato o spento",no_sim:"nessuna SIM",connected:"connessa",no_service:"nessun servizio",searching:"ricerca…",
       pill_stopped:"fermo (surriscaldamento)",
@@ -273,7 +273,6 @@ const T = {
 const tr = () => T[lang];
 const L = (en, it) => lang === "it" ? it : en;
 
-// usage profile (shared with the stats page) tunes the stress verdict
 const PROFILES = {family:{mbps:15,latSoft:120,latHard:250},uhd4k:{mbps:30,latSoft:150,latHard:300},
   work:{mbps:8,latSoft:60,latHard:120},basic:{mbps:4,latSoft:200,latHard:400},custom:{mbps:10,latSoft:120,latHard:250}};
 function profileTarget(){ const id=localStorage.getItem("pw_profile")||"family"; return PROFILES[id]||PROFILES.family; }
@@ -326,7 +325,7 @@ function render(d){
 
   const bars = Math.max(0, Math.min(5, parseInt(f.signal_bars || "0", 10) || 0));
   $("heroBars").textContent = bars;
-  document.querySelectorAll("#bars i").forEach((el,i)=>{ el.classList.toggle("on", i<bars); el.style.height = (14+i*5)+"px"; });
+  document.querySelectorAll("#bars i").forEach((el,i)=>{ el.classList.toggle("on", i<bars); el.style.height = (22+i*8)+"px"; });
 
   $("f_plmn").textContent = dash(f.operator_numeric) || "—";
   $("f_conn").textContent = conn || "—";
@@ -349,10 +348,10 @@ function render(d){
   const code = dash(f.http_code);
   const cHttp = $("c_http");
   cHttp.textContent = code != null ? code : (f.http_ok === false ? "FAIL" : "—");
-  cHttp.style.color = (code==204||code==200) ? "var(--accent)" : (f.http_ok===false ? "var(--bad)" : "");
+  cHttp.style.color = (code==204||code==200) ? "var(--ok)" : (f.http_ok===false ? "var(--bad)" : "");
   const ms = dash(f.http_ms); const cLat = $("c_lat");
   cLat.textContent = ms != null ? ms+" ms" : "—";
-  cLat.style.color = ms==null ? "" : (ms<150?"var(--accent)":ms<400?"var(--warn)":"var(--bad)");
+  cLat.style.color = ms==null ? "" : (ms<150?"var(--ok)":ms<400?"var(--warn)":"var(--bad)");
   $("c_ok").textContent = f.http_ok===true ? tr().yes : (f.http_ok===false ? tr().no : "—");
   $("c_link").textContent = conn==="connected" ? tr().connected : (dash(conn) || "—");
   $("c_age").textContent = (d.age_s!=null) ? (d.age_s<90 ? tr().ago_s(d.age_s) : tr().ago_m(Math.round(d.age_s/60))) : "—";
