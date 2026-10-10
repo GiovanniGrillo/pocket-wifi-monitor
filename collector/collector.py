@@ -540,6 +540,26 @@ class Handler(BaseHTTPRequestHandler):
             self._send(200, json.dumps(data, ensure_ascii=False).encode(),
                        "application/json; charset=utf-8")
             return
+        if path == "/recent":
+            if not self._authorized():
+                self._send(403, b"bad token", "text/plain")
+                return
+            q = parse_qs(route.query)
+            try:
+                n = int(q.get("n", ["200"])[0])
+            except ValueError:
+                n = 200
+            n = max(1, min(n, 2000))
+            try:
+                days = int(q.get("days", ["2"])[0])
+            except ValueError:
+                days = 2
+            days = max(1, min(days, 365))
+            with _lock:
+                rows = _recent(n, days)
+            self._send(200, json.dumps(rows, ensure_ascii=False).encode(),
+                       "application/json; charset=utf-8")
+            return
         if path == "/control":
             if not self._authorized():
                 self._send(403, b"bad token", "text/plain")
