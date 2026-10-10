@@ -393,7 +393,16 @@ const T = {
       card_network:"Rete",k_operator:"Operatore",k_plmn:"Codice (MCC/MNC)",k_tech:"Tecnologia",k_status:"Stato",
       card_conn:"Connettività (dato)",u_http:"risposta HTTP",u_lat:"latenza",k_dataok:"Il dato passa",k_link:"Stato link",
       card_device:"Dispositivo",k_batt:"Batteria",k_temp:"Temperatura",k_sim:"SIM",
-      card_stress:"Stress test",k_dl:"Download",k_latload:"Latenza idle→carico",k_dataused:"Dati usati",k_when:"Quando",
+      card_settings:"Impostazioni & stress test",k_sensor:"Sensore remoto",k_latload:"Latenza idle→carico",k_dataused:"Dati usati",k_when:"Quando",
+      chart_title:"Andamento segnale",chart_hint:"Segnale mediano per fascia. Passa il cursore per i valori esatti.",
+      mix_title:"Mix di qualità",mix_hint:"Quota di tempo a ciascun livello.",mix_center:"usabile",
+      tbl_title:"Campioni recenti",tbl_hint:"Ultime letture dal telefono.",
+      th_time:"Ora",th_op:"Operatore",th_band:"Banda",th_rsrp:"RSRP",th_http:"HTTP",th_status:"Stato",
+      st_online:"Online",st_nosignal:"Senza segnale",st_offline:"Offline",
+      search_ph:"Filtra…",f_all:"Tutti gli stati",no_rows:"Ancora nessun campione.",
+      kpi_signal:"Segnale tipico",kpi_usable:"Tempo usabile",kpi_reliab:"Affidabilità dato",kpi_speed:"Velocità misurata",kpi_dataused:"Dati usati",
+      cap_signal:"mediano nel periodo",cap_usable:"qualità ≥ discreta",cap_reliab:"HTTP 204 ok",cap_speed:"ultimo stress test",cap_dataused:"stima nel periodo",
+      page_of:(a,b,n)=>`${a}–${b} di ${n}`,
       banner:"<b>Nessuna SIM rilevata.</b> La dashboard è pronta: segnale, operatore e cella compariranno appena inserisci una SIM e il device si aggancia alla rete.",
       unreachable:"non raggiungibile",device_off:"telefono non collegato o spento",no_sim:"nessuna SIM",connected:"connessa",no_service:"nessun servizio",searching:"ricerca…",
       pill_stopped:"fermo (surriscaldamento)",
@@ -401,6 +410,7 @@ const T = {
       alarm_stopped:"<b>Sensore fermato.</b> Comando di stop remoto.",
       warn_hot:t=>`<b>Temperatura alta:</b> ${t}°C — monitoraggio attivo; si fermerà se continua a salire.`,
       qlbl:"qualità LTE (RSRP/SINR)",qnone:"nessuna misura",no_sig:"nessun dato segnale",yes:"sì",no:"no",updating:"aggiornamento ogni 3 s",paused:"in pausa",
+      chart_nosig:"segnale non riportato (schermo spento)",daily_median:"media giornaliera",hourly_median:"media oraria",
       stop:"⏹ Ferma sensore",resume_sensor:"▶ Riprendi sensore",run_stress:"▶ Avvia stress test",running:"⏳ in esecuzione…",
       budget_prompt:"Budget dati per il test (MB):",token_prompt:"Token del collector:",confirm_stop:"Fermare il sensore sul telefono? Si fermerà entro un ciclo.",
       run_a_test:"lancia un test",under_load:"sotto carico",ago_s:n=>`${n} s fa`,ago_m:n=>`${n} min fa`,
@@ -416,7 +426,8 @@ const PROFILES = {family:{mbps:15,latSoft:120,latHard:250},uhd4k:{mbps:30,latSof
   work:{mbps:8,latSoft:60,latHard:120},basic:{mbps:4,latSoft:200,latHard:400},custom:{mbps:10,latSoft:120,latHard:250}};
 function profileTarget(){ const id=localStorage.getItem("pw_profile")||"family"; return PROFILES[id]||PROFILES.family; }
 
-let lastData = null, lastCtrl = null;
+let lastData = null, lastCtrl = null, hist = null, recent = null;
+let days = 1, tblPage = 0; const TBL_SIZE = 10;
 
 function applyStatic(){
   document.documentElement.lang = lang;
@@ -424,6 +435,14 @@ function applyStatic(){
   $("langBtn").textContent = lang === "it" ? "🌐 EN" : "🌐 IT";
   $("simBannerText").innerHTML = tr().banner;
   $("pauseBtn").textContent = paused ? tr().resume : tr().pause;
+  $("searchBox").placeholder = tr().search_ph;
+  fillStatusFilter();
+}
+function fillStatusFilter(){
+  const sel=$("statusFilter"), cur=sel.value||"all";
+  sel.innerHTML = [["all",tr().f_all],["online",tr().st_online],["nosignal",tr().st_nosignal],["offline",tr().st_offline]]
+    .map(([v,t])=>`<option value="${v}">${t}</option>`).join("");
+  sel.value = cur;
 }
 
 function setPill(cls, text){ $("statusPill").className = "pill " + cls; $("statusText").textContent = text; }
@@ -505,11 +524,151 @@ function render(d){
   $("f_sim").textContent = tr().sim[f.sim_status] || dash(f.sim_status) || "—";
 }
 
+/* ---------- KPI row ---------- */
+function med(a){ if(!a.length) return null; const s=[...a].sort((x,y)=>x-y); const m=s.length>>1; return s.length%2 ? s[m] : (s[m-1]+s[m])/2; }
+function halvesDiff(vals){ const v=vals.filter(x=>x!=null); if(v.length<4) return null; const m=v.length>>1;
+  const a=med(v.slice(0,m)), b=med(v.slice(m)); if(a==null||b==null) return null; return Math.round(b-a); }
+function badge(delta, unit){
+  if(delta==null) return "";
+  if(delta===0) return `<span class="kbadge">±0${unit}</span>`;
+  const sign = delta>0 ? "+" : "";
+  return `<span class="kbadge ${delta>0?'up':'down'}">${sign}${delta}${unit}</span>`;
+}
+function kpiCard(lbl,val,badgeHtml,cap){
+  return `<div class="kpi"><div class="kpi-top"><span class="kpi-l">${lbl}</span>${badgeHtml||""}</div><div class="kpi-v">${val}</div><div class="kpi-c">${cap}</div></div>`;
+}
+function renderKpis(h){
+  if(!h){ $("kpiRow").innerHTML=""; return; }
+  const series = h.series || [];
+  const rs = series.map(p=>p.rsrp_median);
+  const okr = series.map(p=>p.ok_rate);
+  const uq = (h.by_day||[]).map(d=>d.ok_quality_pct);
+  const med0 = h.rsrp && h.rsrp.median;
+  const cards = [];
+  cards.push(kpiCard(tr().kpi_signal, med0!=null ? `${med0}<small> dBm</small>` : "—", badge(halvesDiff(rs)," dB"), tr().cap_signal));
+  cards.push(kpiCard(tr().kpi_usable, h.pct_ok_quality!=null ? `${h.pct_ok_quality}%` : "—", badge(halvesDiff(uq)," pp"), tr().cap_usable));
+  cards.push(kpiCard(tr().kpi_reliab, h.uplink_ok_pct!=null ? `${h.uplink_ok_pct}%` : "—", badge(halvesDiff(okr)," pp"), tr().cap_reliab));
+  const dl = h.last_stress && h.last_stress.dl_mbps;
+  if(dl!=null) cards.push(kpiCard(tr().kpi_speed, `${dl}<small> Mbps</small>`, "", tr().cap_speed));
+  else cards.push(kpiCard(tr().kpi_dataused, h.data_used_mb!=null ? `${h.data_used_mb}<small> MB</small>` : "—", "", tr().cap_dataused));
+  $("kpiRow").innerHTML = cards.join("");
+}
+
+/* ---------- main chart (interactive) ---------- */
+let rsrpPts = [], rsrpBucket = "hour";
+function sigWord(rsrp){ if(rsrp==null) return "—";
+  if(rsrp>=-90) return L("strong","forte"); if(rsrp>=-100) return L("good","buono");
+  if(rsrp>=-108) return L("fair","discreto"); if(rsrp>=-115) return L("weak","scarso"); return L("very weak","molto scarso"); }
+function fmtTick(t){ const d=new Date(t);
+  if(rsrpBucket==="day") return d.toLocaleDateString(lang==="it"?"it-IT":"en-GB",{day:"2-digit",month:"2-digit"});
+  return String(d.getHours()).padStart(2,"0"); }
+function renderChart(h){
+  const s=(h&&h.series)||[],W=800,H=220,padL=40,padR=12,padT=10,padB=28,yMin=-120,yMax=-70;
+  rsrpBucket=(h&&h.bucket)||"hour";
+  const x=i=>padL+(s.length<=1?(W-padL-padR)/2:i*(W-padL-padR)/(s.length-1)),y=v=>padT+(yMax-v)*(H-padT-padB)/(yMax-yMin);
+  const baseY=H-padB; let g="";
+  const zones=[[-70,-95,"var(--ok)"],[-95,-105,"var(--warn)"],[-105,-120,"var(--bad)"]];
+  zones.forEach(([a,b,c])=>{g+=`<rect x="${padL}" y="${y(a).toFixed(1)}" width="${W-padL-padR}" height="${(y(b)-y(a)).toFixed(1)}" fill="${c}" opacity="0.08"/>`;});
+  for(let v=-70;v>=-120;v-=10){const yy=y(v);g+=`<text x="4" y="${yy+4}" fill="var(--faint)" font-size="10">${v}</text>`;}
+  g+=`<line x1="${padL}" y1="${baseY}" x2="${W-padR}" y2="${baseY}" stroke="var(--line)"/>`;
+  const step=Math.max(1,Math.ceil(s.length/8));
+  s.forEach((p,i)=>{if(i%step===0||i===s.length-1){g+=`<text x="${x(i).toFixed(1)}" y="${H-8}" fill="var(--faint)" font-size="9.5" text-anchor="middle">${fmtTick(p.t)}</text>`;}});
+  let pts=[],segs=[];
+  s.forEach((p,i)=>{if(p.rsrp_median==null){if(pts.length)segs.push(pts);pts=[];}else pts.push(`${x(i).toFixed(1)},${y(p.rsrp_median).toFixed(1)}`);});
+  if(pts.length)segs.push(pts);
+  segs.forEach(seg=>g+=`<polyline points="${seg.join(' ')}" fill="none" stroke="var(--ink)" stroke-width="1.8" stroke-linejoin="round"/>`);
+  rsrpPts=[];
+  s.forEach((p,i)=>{const cx=x(i);
+    if(p.rsrp_median==null){ if(p.n)g+=`<circle cx="${cx.toFixed(1)}" cy="${(baseY-3).toFixed(1)}" r="2" fill="none" stroke="var(--faint)" stroke-width="1"/>`; rsrpPts.push({cx,cy:baseY,p}); }
+    else{ const cy=y(p.rsrp_median); g+=`<circle cx="${cx.toFixed(1)}" cy="${cy.toFixed(1)}" r="2.2" fill="var(--ink)"/>`; rsrpPts.push({cx,cy,p}); }});
+  g+=`<line id="rsrpCross" x1="0" y1="${padT}" x2="0" y2="${baseY}" stroke="var(--faint)" stroke-width="1" stroke-dasharray="3 3" visibility="hidden"/>`;
+  g+=`<circle id="rsrpDot" r="3.4" fill="none" stroke="var(--ink)" stroke-width="1.6" visibility="hidden"/>`;
+  $("rsrpChart").innerHTML = s.length ? g : `<text x="400" y="110" fill="var(--faint)" font-size="13" text-anchor="middle">${L("no data yet","ancora nessun dato")}</text>`;
+  $("rsrpLegend").textContent = s.length ? (rsrpBucket==="day"?tr().daily_median:tr().hourly_median) : "";
+}
+function rsrpHover(ev){
+  if(!rsrpPts.length) return;
+  const svg=$("rsrpChart"),r=svg.getBoundingClientRect();
+  const vbX=(ev.clientX-r.left)/r.width*800;
+  let best=null,bd=1e9; for(const pt of rsrpPts){const d=Math.abs(pt.cx-vbX);if(d<bd){bd=d;best=pt;}}
+  if(!best) return;
+  const cross=$("rsrpCross"); if(cross){cross.setAttribute("x1",best.cx.toFixed(1));cross.setAttribute("x2",best.cx.toFixed(1));cross.setAttribute("visibility","visible");}
+  const hasSig=best.p.rsrp_median!=null, dot=$("rsrpDot");
+  if(dot){dot.setAttribute("cx",best.cx.toFixed(1));dot.setAttribute("cy",best.cy.toFixed(1));dot.setAttribute("visibility",hasSig?"visible":"hidden");}
+  const p=best.p,d=new Date(p.t);
+  const when=rsrpBucket==="day"
+    ? d.toLocaleDateString(lang==="it"?"it-IT":"en-GB",{weekday:"short",day:"2-digit",month:"2-digit"})
+    : `${d.toLocaleDateString(lang==="it"?"it-IT":"en-GB",{day:"2-digit",month:"2-digit"})} ${String(d.getHours()).padStart(2,"0")}:00`;
+  const sigLine=hasSig ? `<span class="tv">${p.rsrp_median} dBm · ${sigWord(p.rsrp_median)}</span>` : `<span class="tm">${tr().chart_nosig}</span>`;
+  const tip=$("rsrpTip");
+  tip.innerHTML=`<div class="tw">${when}</div>${sigLine}<br><span class="tm">${p.n} ${L("samples","campioni")} · ${L("data ok","dato ok")} ${p.ok_rate}%</span>`;
+  tip.hidden=false;
+  const wrapR=$("rsrpWrap").getBoundingClientRect();
+  tip.style.left=((best.cx/800)*r.width+(r.left-wrapR.left)).toFixed(1)+"px";
+  tip.style.top=((best.cy/220)*r.height+(r.top-wrapR.top)).toFixed(1)+"px";
+}
+function rsrpLeave(){$("rsrpTip").hidden=true;const c=$("rsrpCross");if(c)c.setAttribute("visibility","hidden");const d=$("rsrpDot");if(d)d.setAttribute("visibility","hidden");}
+
+/* ---------- quality donut ---------- */
+function renderMix(h){
+  const p=(h&&h.quality_pct)||{};
+  const segs=[["excellent","var(--ok)"],["good","var(--green)"],["fair","var(--warn)"],["poor","var(--bad)"],["very_poor","var(--bad2)"]];
+  const total=segs.reduce((s,[k])=>s+(p[k]||0),0);
+  const r=54,C=2*Math.PI*r,cx=70,cy=70; let off=0,legend="";
+  let g=`<circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="var(--panel-2)" stroke-width="16"/>`;
+  segs.forEach(([k,c])=>{ const v=p[k]||0;
+    if(total>0&&v>0){ const len=C*v/total;
+      g+=`<circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="${c}" stroke-width="16" stroke-linecap="butt" stroke-dasharray="${len.toFixed(2)} ${(C-len).toFixed(2)}" stroke-dashoffset="${(-off).toFixed(2)}" transform="rotate(-90 ${cx} ${cy})"/>`;
+      off+=len; }
+    legend+=`<div class="lg"><span class="sw" style="background:${c}"></span>${tr().q[k]||k}<b>${v}%</b></div>`; });
+  const center=h&&h.pct_ok_quality!=null ? h.pct_ok_quality+"%" : "—";
+  g+=`<text x="${cx}" y="${cy-1}" text-anchor="middle" font-size="20" font-weight="800" fill="var(--ink)">${center}</text>`;
+  g+=`<text x="${cx}" y="${cy+15}" text-anchor="middle" font-size="9" fill="var(--faint)">${tr().mix_center}</text>`;
+  $("mixChart").innerHTML=g;
+  $("mixLegend").innerHTML=legend;
+}
+
+/* ---------- recent-samples table ---------- */
+function statusOf(r){ if(r.http_ok===false) return "offline"; if(r.rsrp==null||r.rsrp==="") return "nosignal"; return "online"; }
+function renderTable(){
+  if(!recent){ return; }
+  const q=($("searchBox").value||"").toLowerCase().trim();
+  const sf=$("statusFilter").value||"all";
+  const rows=recent.filter(r=>{ const st=statusOf(r); if(sf!=="all"&&st!==sf) return false;
+    if(q){ const hay=`${r.operator||""} ${r.band||""} ${r.net||""} ${r.rsrp??""}`.toLowerCase(); if(!hay.includes(q)) return false; } return true; });
+  const total=rows.length, pages=Math.max(1,Math.ceil(total/TBL_SIZE));
+  if(tblPage>=pages) tblPage=pages-1; if(tblPage<0) tblPage=0;
+  const start=tblPage*TBL_SIZE, slice=rows.slice(start,start+TBL_SIZE);
+  const stLbl={online:tr().st_online,nosignal:tr().st_nosignal,offline:tr().st_offline};
+  const stCls={online:"b-ok",nosignal:"b-warn",offline:"b-bad"};
+  $("tblBody").innerHTML = slice.length ? slice.map(r=>{ const st=statusOf(r); const d=new Date(r.t);
+      const time=d.toLocaleString(lang,{month:"2-digit",day:"2-digit",hour:"2-digit",minute:"2-digit",second:"2-digit"});
+      return `<tr><td class="mono">${time}</td><td>${r.operator||"—"}</td><td>${r.band||"—"}</td>`
+        +`<td class="mono">${r.rsrp!=null&&r.rsrp!==""?r.rsrp+" dBm":"—"}</td>`
+        +`<td class="mono">${r.http??(r.http_ok===false?"FAIL":"—")}</td>`
+        +`<td><span class="tbadge ${stCls[st]}">${stLbl[st]}</span></td></tr>`;
+    }).join("") : `<tr><td colspan="6" class="tbl-empty">${tr().no_rows}</td></tr>`;
+  $("tblInfo").textContent = total ? tr().page_of(start+1, Math.min(start+TBL_SIZE,total), total) : tr().page_of(0,0,0);
+  $("tblPrev").disabled = tblPage<=0; $("tblNext").disabled = tblPage>=pages-1;
+}
+
+/* ---------- realtime loop ---------- */
 async function tick(){
   try { const r = await privateFetch("/data", {cache:"no-store"}); lastData = await r.json(); render(lastData); }
   catch (e) { setPill("bad", "backend offline"); }
 }
 function loop(){ if(!paused) tick(); timer = setTimeout(loop, REFRESH); }
+
+/* ---------- analytics (history + recent) ---------- */
+async function loadHist(){
+  try{ hist = await (await privateFetch(`/history?days=${days}`, {cache:"no-store"})).json(); renderKpis(hist); renderChart(hist); renderMix(hist); }
+  catch(e){}
+}
+async function loadRecent(){
+  try{ recent = await (await privateFetch(`/recent?n=400&days=${Math.min(days,7)}`, {cache:"no-store"})).json(); renderTable(); }
+  catch(e){}
+}
+function loadAnalytics(){ loadHist(); loadRecent(); }
 
 $("pauseBtn").addEventListener("click", ()=>{
   paused = !paused;
@@ -519,16 +678,14 @@ $("pauseBtn").addEventListener("click", ()=>{
   if (!paused) tick();
 });
 
-// --- remote stop/resume + stress test ---
+/* ---------- remote stop/resume + stress test ---------- */
 let ctrlStopped = false;
 function renderCtrlBtn(){ const b=$("ctrlBtn"); b.textContent = ctrlStopped ? tr().resume_sensor : tr().stop;
   b.classList.toggle("danger", !ctrlStopped); b.classList.toggle("on", ctrlStopped); }
-
 async function refreshCtrl(){
   try { lastCtrl = await (await privateFetch("/control", {cache:"no-store"})).json(); ctrlStopped = !!lastCtrl.stop; renderCtrlBtn(); renderStress(lastCtrl); }
   catch (e) {}
 }
-
 function stressVerdict(r){
   const dl = r.dl_mbps; if (dl==null) return {lvl:"none", word:"—", lbl:tr().run_a_test};
   const p = profileTarget();
@@ -567,9 +724,7 @@ async function privateFetch(path, options = {}){
   return response;
 }
 async function setStop(v){
-  try {
-    await privateFetch("/control", {method:"POST", headers:{"Content-Type":"application/json"}, body: JSON.stringify({stop:v})});
-  } catch (e) {}
+  try { await privateFetch("/control", {method:"POST", headers:{"Content-Type":"application/json"}, body: JSON.stringify({stop:v})}); } catch (e) {}
   refreshCtrl();
 }
 $("ctrlBtn").addEventListener("click", ()=>{ if(!ctrlStopped && !confirm(tr().confirm_stop)) return; setStop(!ctrlStopped); });
@@ -580,11 +735,30 @@ $("stressBtn").addEventListener("click", async ()=>{
     body: JSON.stringify({stress:{budget_mb: mb, streams: 3, secs: 15}})});
   refreshCtrl();
 });
+
+/* ---------- UI wiring ---------- */
 $("langBtn").addEventListener("click", ()=>{
   lang = lang === "it" ? "en" : "it"; localStorage.setItem("pw_lang", lang);
   applyStatic(); if(lastData) render(lastData); if(lastCtrl){ renderCtrlBtn(); renderStress(lastCtrl); }
+  if(hist){ renderKpis(hist); renderChart(hist); renderMix(hist); } renderTable();
   $("footText").textContent = paused ? tr().paused : tr().updating;
 });
+$("rangeSeg").addEventListener("click", e=>{ const b=e.target.closest("button"); if(!b) return;
+  days = parseInt(b.dataset.d,10); [...$("rangeSeg").children].forEach(x=>x.classList.toggle("on", x===b));
+  tblPage=0; loadAnalytics(); });
+$("searchBox").addEventListener("input", ()=>{ tblPage=0; renderTable(); });
+$("statusFilter").addEventListener("change", ()=>{ tblPage=0; renderTable(); });
+$("tblPrev").addEventListener("click", ()=>{ tblPage--; renderTable(); });
+$("tblNext").addEventListener("click", ()=>{ tblPage++; renderTable(); });
+$("rsrpChart").addEventListener("pointermove", rsrpHover);
+$("rsrpChart").addEventListener("pointerleave", rsrpLeave);
+$("rsrpChart").addEventListener("pointerdown", rsrpHover);
+
+// mobile sidebar
+function closeNav(){ $("app").classList.remove("nav-open"); }
+$("menuBtn").addEventListener("click", ()=> $("app").classList.toggle("nav-open"));
+$("scrim").addEventListener("click", closeNav);
+document.querySelectorAll(".side-link").forEach(a=>a.addEventListener("click", ()=>{ if(window.innerWidth<=900) closeNav(); }));
 
 function curTheme(){ return document.documentElement.dataset.theme || (matchMedia("(prefers-color-scheme:dark)").matches ? "dark" : "light"); }
 function syncThemeBtn(){ $("themeBtn").textContent = curTheme() === "dark" ? "☀️" : "🌙"; }
@@ -593,13 +767,16 @@ $("themeBtn").addEventListener("click", ()=>{
   document.documentElement.dataset.theme = t;
   try{ localStorage.setItem("pw_theme", t); }catch(e){}
   syncThemeBtn();
+  if(hist){ renderChart(hist); renderMix(hist); }
 });
 syncThemeBtn();
 
 applyStatic();
 $("footText").textContent = tr().updating;
 tick(); loop(); refreshCtrl();
+loadAnalytics();
 setInterval(refreshCtrl, 5000);
+setInterval(loadAnalytics, 30000);
 </script>
 </body>
 </html>
