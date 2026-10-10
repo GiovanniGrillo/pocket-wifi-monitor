@@ -20,13 +20,23 @@ Termux + Termux:API                      collector.py
 phone_agent.py ── HTTP su Tailscale ──▶  data/ + dashboard
 ```
 
-- `phone_agent.py` legge LTE, batteria e connettività, mantiene un outbox locale
-  e ritenta i campioni quando il PC non è raggiungibile.
-- `collector.py` riceve singoli campioni o batch, deduplica nella vista storica
-  e serve `/`, `/stats`, `/data`, `/history` e `/control` (stop remoto e stress test).
-- `bands.py` contiene solo funzioni standard-library per EARFCN, bande e qualità.
-- `adb_signal.py` offre una lettura rapida via USB/ADB senza Termux.
-- `stresstest.py` misura throughput e latenza sotto carico tramite tethering USB.
+Struttura del progetto:
+
+```text
+agent/        gira sul telefono (Termux): phone_agent.py, bands.py, *.sh di avvio
+collector/    gira sul PC: collector.py, dashboard.html, stats.html, start.sh, data/
+tools/        strumenti PC: stresstest.py, adb_signal.py
+tests/        test sintetici
+docs/         PHONE.md (procedura telefono)
+```
+
+- `agent/phone_agent.py` legge LTE, batteria e connettività, mantiene un outbox
+  locale e ritenta i campioni quando il PC non è raggiungibile.
+- `collector/collector.py` riceve singoli campioni o batch, deduplica nella vista
+  storica e serve `/`, `/stats`, `/data`, `/history` e `/control` (stop remoto e stress test).
+- `agent/bands.py` contiene solo funzioni standard-library per EARFCN, bande e qualità.
+- `tools/adb_signal.py` offre una lettura rapida via USB/ADB senza Termux.
+- `tools/stresstest.py` misura throughput e latenza sotto carico tramite tethering USB.
 
 ## Sicurezza e dati
 
@@ -53,7 +63,7 @@ difesa in profondità puoi legarlo al solo indirizzo Tailscale invece che a
 `0.0.0.0`:
 
 ```bash
-python3 collector.py --bind "$(tailscale ip -4 | head -1)" --token "$POCKET_WIFI_TOKEN"
+python3 collector/collector.py --bind "$(tailscale ip -4 | head -1)" --token "$POCKET_WIFI_TOKEN"
 ```
 
 ## Avvio sul PC
@@ -61,7 +71,7 @@ python3 collector.py --bind "$(tailscale ip -4 | head -1)" --token "$POCKET_WIFI
 Requisiti: Python 3.9+ e Tailscale. Il codice usa solo la libreria standard.
 
 ```bash
-cd phone-signal-monitor
+cd collector
 export POCKET_WIFI_TOKEN='inserisci-qui-un-token-casuale'
 ./start.sh
 ```
@@ -69,7 +79,7 @@ export POCKET_WIFI_TOKEN='inserisci-qui-un-token-casuale'
 Apri `http://127.0.0.1:8099`. Per una configurazione manuale:
 
 ```bash
-python3 collector.py --bind 0.0.0.0 --port 8099 \
+python3 collector/collector.py --bind 0.0.0.0 --port 8099 \
   --token "$POCKET_WIFI_TOKEN"
 ```
 
@@ -165,14 +175,14 @@ critiche spegne da sé a prescindere.
 Segnale via USB/ADB:
 
 ```bash
-python3 adb_signal.py --loop --interval 5 --csv
+python3 tools/adb_signal.py --loop --interval 5 --csv
 ```
 
 Throughput e bufferbloat via tethering USB (il default può usare fino a 300 MB;
 il tetto `--budget-mb` è approssimato alla granularità del blocco scaricato):
 
 ```bash
-python3 stresstest.py --budget-mb 100 --phase 20
+python3 tools/stresstest.py --budget-mb 100 --phase 20
 ```
 
 Controlla il budget del tuo piano e interrompi con `Ctrl-C` quando necessario.
