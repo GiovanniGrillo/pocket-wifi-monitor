@@ -37,6 +37,7 @@ BASE = Path(__file__).parent
 DATA_DIR = BASE / "data"
 HTML = BASE / "dashboard.html"
 STATS_HTML = BASE / "stats.html"
+EXPLORE_HTML = BASE / "explore.html"
 
 QUALITY_ORDER = ["very_poor", "poor", "fair", "good", "excellent"]
 
@@ -217,8 +218,13 @@ def _recent(n: int, days: int = 2) -> list:
             "net": d.get("network_type"),
             "band": d.get("sig_band"),
             "rsrp": d.get("sig_rsrp"),
+            "rsrq": d.get("sig_rsrq"),
+            "sinr": d.get("sig_sinr"),
             "http": d.get("http_code"),
+            "http_ms": d.get("http_ms"),
             "http_ok": d.get("http_ok"),
+            "batt": d.get("batt_pct"),
+            "temp": d.get("batt_temp"),
         })
     rows.reverse()
     return rows[:n]
@@ -525,6 +531,12 @@ class Handler(BaseHTTPRequestHandler):
                 self._send(200, STATS_HTML.read_bytes(), "text/html; charset=utf-8")
             except OSError:
                 self._send(500, b"stats.html missing", "text/plain")
+            return
+        if path == "/explore":
+            try:
+                self._send(200, EXPLORE_HTML.read_bytes(), "text/html; charset=utf-8")
+            except OSError:
+                self._send(500, b"explore.html missing", "text/plain")
             return
         if path == "/history":
             if not self._authorized():
