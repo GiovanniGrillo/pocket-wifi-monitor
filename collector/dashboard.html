@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="color-scheme" content="light dark">
 <title>Pocket-WiFi Monitor</title>
+<script>try{var _t=localStorage.getItem('pw_theme');if(_t)document.documentElement.dataset.theme=_t;}catch(e){}</script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -19,15 +20,17 @@
     --muted:#6b7380;         /* secondary text */
     --faint:#9aa2ad;         /* tertiary */
     --ink-pill:#14181f;      /* active nav / dark pills */
+    --pill-ink:#ffffff;      /* text on the active nav pill */
     --ok:#16a34a; --warn:#d99409; --bad:#e5484d;
     --blue:#3b82f6; --green:#22c55e; --pink:#ec4899; --amber:#f59e0b;
     --radius:16px; --radius-sm:11px;
     --shadow:0 1px 2px rgba(16,24,40,.04), 0 8px 24px rgba(16,24,40,.06);
     --sans:"Plus Jakarta Sans",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
   }
+  /* dark tokens: auto (system) unless the user forced light, or explicit dark */
   @media (prefers-color-scheme:dark){
-    :root{--bg:#0b0d10;--app:#101318;--panel:#141922;--panel-2:#0f141b;--line:#232a33;
-      --ink:#eef1f5;--muted:#9aa4b2;--faint:#5b6675;--ink-pill:#e9edf2;
+    :root:not([data-theme="light"]){--bg:#0b0d10;--app:#101318;--panel:#141922;--panel-2:#0f141b;--line:#232a33;
+      --ink:#eef1f5;--muted:#9aa4b2;--faint:#5b6675;--ink-pill:#e9edf2;--pill-ink:#0b0d10;
       --shadow:0 1px 2px rgba(0,0,0,.3),0 10px 28px rgba(0,0,0,.35);}
   }
   *{box-sizing:border-box;}
