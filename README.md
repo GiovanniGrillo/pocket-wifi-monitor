@@ -1,91 +1,102 @@
 # Pocket-WiFi Monitor
 
-Pocket-WiFi Monitor trasforma un telefono Android con SIM in un sensore remoto
-per misurare la qualità della rete mobile. Il telefono legge segnale e cella
-con Termux:API, esegue un piccolo controllo di connettività e invia i campioni
-al computer di casa. Il computer li salva localmente e serve una dashboard web.
+Turn a spare Android phone with a SIM into a **remote mobile-network quality
+sensor**. The phone reads signal, cell and connectivity with Termux:API, runs a
+small reachability check and ships the samples to a computer at home over
+Tailscale. The computer stores them locally and serves a web dashboard — so you
+can tell, from anywhere, whether a place has good enough reception before you
+commit to a SIM or a contract.
 
-Il progetto è pensato come base riutilizzabile per altri sensori, non come
-servizio cloud: non richiede database, account applicativi o pacchetti Python
-esterni.
+![Python](https://img.shields.io/badge/Python-3.9%2B-3776AB?logo=python&logoColor=white)
+![JavaScript](https://img.shields.io/badge/JavaScript-vanilla-F7DF1E?logo=javascript&logoColor=black)
+![HTML5](https://img.shields.io/badge/HTML5-E34F26?logo=html5&logoColor=white)
+![CSS3](https://img.shields.io/badge/CSS3-1572B6?logo=css3&logoColor=white)
+![Bash](https://img.shields.io/badge/Bash-4EAA25?logo=gnubash&logoColor=white)
+![Dependencies](https://img.shields.io/badge/dependencies-none%20(stdlib%20only)-success)
+![License](https://img.shields.io/badge/license-MIT-blue)
 
-> **Stato:** prototipo funzionante. Le soglie radio sono euristiche e i dati
-> raccolti dipendono dal modem, dalla versione Android e dall'operatore.
+> **Status:** working prototype. The radio thresholds are heuristics; what you
+> can read depends on the modem, the Android version and the carrier.
 
-## Architettura
+## What it does
+
+- Measures **signal** (RSRP/RSRQ, band, cell), **connectivity** (does real
+  traffic pass, and how fast does it respond) and **device health** (battery,
+  temperature) at a chosen interval.
+- Keeps working when the home PC is off: samples are written to a durable local
+  outbox on the phone and **caught up** the next time the PC is reachable.
+- Builds up a **history** so you can judge a spot over days, not seconds — with
+  day-by-day and hour-of-day breakdowns to catch the weak evening hours.
+- Gives a plain-language **verdict for a usage profile** (family streaming, 4K,
+  remote work, …): "good / borderline / not enough".
+- Runs an on-demand or scheduled **stress test** with an explicit data budget.
+- No database, no cloud account, **no external Python packages** — standard
+  library only.
+
+## How it works
 
 ```text
-Telefono Android                         PC di raccolta
-Termux + Termux:API                      collector.py
-phone_agent.py ── HTTP su Tailscale ──▶  data/ + dashboard
+Android phone                              Home PC
+Termux + Termux:API                        collector.py
+phone_agent.py  ──  HTTP over Tailscale  ─▶  data/ + web dashboard
 ```
 
-Struttura del progetto:
+- `agent/phone_agent.py` reads LTE, battery and connectivity, keeps a local
+  outbox and retries samples whenever the PC is unreachable.
+- `collector/collector.py` ingests single samples or batches, de-duplicates the
+  historical view and serves `/`, `/stats`, `/data`, `/history`, `/recent` and
+  `/control` (remote stop and stress test).
+- `agent/bands.py` holds only standard-library helpers for EARFCN, bands and
+  quality classification.
+
+## Project layout
 
 ```text
-agent/        gira sul telefono (Termux): phone_agent.py, bands.py, *.sh di avvio
-collector/    gira sul PC: collector.py, dashboard.html, stats.html, start.sh, data/
-tools/        strumenti PC: stresstest.py, adb_signal.py
-tests/        test sintetici
-docs/         PHONE.md (procedura telefono)
+agent/        runs on the phone (Termux): phone_agent.py, bands.py, start scripts
+collector/    runs on the PC: collector.py, dashboard.html, stats.html, start.sh, data/
+tools/        PC-side utilities: stresstest.py, adb_signal.py
+tests/        synthetic tests
+docs/         PHONE.md (phone setup walkthrough)
 ```
 
-- `agent/phone_agent.py` legge LTE, batteria e connettività, mantiene un outbox
-  locale e ritenta i campioni quando il PC non è raggiungibile.
-- `collector/collector.py` riceve singoli campioni o batch, deduplica nella vista
-  storica e serve `/`, `/stats`, `/data`, `/history` e `/control` (stop remoto e stress test).
-- `agent/bands.py` contiene solo funzioni standard-library per EARFCN, bande e qualità.
-- `tools/adb_signal.py` offre una lettura rapida via USB/ADB senza Termux.
-- `tools/stresstest.py` misura throughput e latenza sotto carico tramite tethering USB.
+## The two pages
 
-## Sicurezza e dati
+- **Overview** (`/`) — the live view: a sidebar app with four KPI cards
+  (signal, usable time, data reliability, speed), an interactive
+  signal-over-time chart, a quality-mix donut, the realtime signal/network/
+  device cards, remote controls and a paginated table of the most recent
+  samples.
+- **Analysis** (`/stats`) — the verdict view: usage-profile recommendation,
+  day-by-day and hour-of-day patterns, sensor uptime, conclusions, a dedicated
+  4G/5G router upgrade estimate and a short glossary.
 
-Questa repo è progettata per essere pubblica, ma i campioni reali **non** lo
-sono: possono contenere operatore, identificativi di cella, tempi e stato della
-batteria. La directory `data/` è ignorata da Git e contiene solo `.gitkeep`.
+Both pages are a single self-contained HTML file each (hand-rolled SVG charts,
+no chart libraries), bilingual **EN/IT** and with a light/dark theme toggle.
 
-Il token è passato nell'header `X-Token`; non inserire token, IP Tailscale,
-operatori o log reali negli script, nelle issue o nei commit. Generane uno
-casuale, per esempio:
+## Run the collector (PC)
 
-```bash
-python3 -c 'import secrets; print(secrets.token_urlsafe(32))'
-```
-
-Il collector rifiuta l'avvio esposto sulla rete senza `--token` e protegge sia
-le API di scrittura sia quelle di lettura. Tailscale è consigliato per evitare
-il port forwarding; non è una sostituzione del token.
-
-Il collector parla **HTTP in chiaro**: la riservatezza del token e dei dati in
-transito dipende dalla cifratura di Tailscale (WireGuard). Non esporre il
-collector su un'interfaccia pubblica senza un reverse proxy TLS davanti. Per
-difesa in profondità puoi legarlo al solo indirizzo Tailscale invece che a
-`0.0.0.0`:
-
-```bash
-python3 collector/collector.py --bind "$(tailscale ip -4 | head -1)" --token "$POCKET_WIFI_TOKEN"
-```
-
-## Avvio sul PC
-
-Requisiti: Python 3.9+ e Tailscale. Il codice usa solo la libreria standard.
+Requirements: Python 3.9+ and Tailscale. The code uses only the standard library.
 
 ```bash
 cd collector
-export POCKET_WIFI_TOKEN='inserisci-qui-un-token-casuale'
+export POCKET_WIFI_TOKEN='put-a-long-random-token-here'
 ./start.sh
 ```
 
-Apri `http://127.0.0.1:8099`. Per una configurazione manuale:
+Open `http://127.0.0.1:8099`. For a manual invocation:
 
 ```bash
 python3 collector/collector.py --bind 0.0.0.0 --port 8099 \
   --token "$POCKET_WIFI_TOKEN"
 ```
 
-L'indirizzo Tailscale del PC si trova con `tailscale ip -4`.
+Find the PC's Tailscale address with `tailscale ip -4`. Generate a token with:
 
-## Installazione sul telefono (Termux)
+```bash
+python3 -c 'import secrets; print(secrets.token_urlsafe(32))'
+```
+
+## Install the agent (phone / Termux)
 
 Questa procedura è adatta anche a un vecchio Xiaomi con Android 5G; i nomi dei
 menu possono cambiare a seconda della MIUI/HyperOS.
