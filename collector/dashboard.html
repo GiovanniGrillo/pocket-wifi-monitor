@@ -303,6 +303,7 @@
           <div class="row"><span class="k" data-i18n="k_batt">Battery</span><span class="v" id="f_batt">—</span></div>
           <div class="row"><span class="k" data-i18n="k_temp">Temperature</span><span class="v" id="f_temp">—</span></div>
           <div class="row"><span class="k" data-i18n="k_sim">SIM</span><span class="v" id="f_sim">—</span></div>
+          <div class="row"><span class="k" data-i18n="k_uptime">Agent uptime</span><span class="v" id="f_uptime">—</span></div>
         </div>
       </section>
 
@@ -362,7 +363,7 @@ const T = {
       pause:"Pause",resume:"Resume",signal:"Signal",
       card_network:"Network",k_operator:"Operator",k_plmn:"Code (MCC/MNC)",k_tech:"Technology",k_status:"Status",
       card_conn:"Connectivity (data)",u_http:"HTTP response",u_lat:"latency",k_dataok:"Data works",k_link:"Link state",
-      card_device:"Device",k_batt:"Battery",k_temp:"Temperature",k_sim:"SIM",
+      card_device:"Device",k_batt:"Battery",k_temp:"Temperature",k_sim:"SIM",k_uptime:"Agent uptime",
       card_settings:"Settings & stress test",k_sensor:"Remote sensor",k_latload:"Latency idle→load",k_dataused:"Data used",k_when:"When",
       chart_title:"Signal over time",chart_hint:"Median signal per bucket. Hover the line for exact values.",
       mix_title:"Quality mix",mix_hint:"Share of time at each level.",mix_center:"usable",
@@ -392,7 +393,7 @@ const T = {
       pause:"Pausa",resume:"Riprendi",signal:"Segnale",
       card_network:"Rete",k_operator:"Operatore",k_plmn:"Codice (MCC/MNC)",k_tech:"Tecnologia",k_status:"Stato",
       card_conn:"Connettività (dato)",u_http:"risposta HTTP",u_lat:"latenza",k_dataok:"Il dato passa",k_link:"Stato link",
-      card_device:"Dispositivo",k_batt:"Batteria",k_temp:"Temperatura",k_sim:"SIM",
+      card_device:"Dispositivo",k_batt:"Batteria",k_temp:"Temperatura",k_sim:"SIM",k_uptime:"Agente attivo da",
       card_settings:"Impostazioni & stress test",k_sensor:"Sensore remoto",k_latload:"Latenza idle→carico",k_dataused:"Dati usati",k_when:"Quando",
       chart_title:"Andamento segnale",chart_hint:"Segnale mediano per fascia. Passa il cursore per i valori esatti.",
       mix_title:"Mix di qualità",mix_hint:"Quota di tempo a ciascun livello.",mix_center:"usabile",
@@ -522,6 +523,18 @@ function render(d){
   tEl.textContent = tp != null ? tp+" °C" : "—";
   tEl.style.color = (tp!=null && tp>=44) ? "var(--bad)" : (tp!=null && tp>=40) ? "var(--warn)" : "";
   $("f_sim").textContent = tr().sim[f.sim_status] || dash(f.sim_status) || "—";
+  const up = dash(f.agent_uptime_s);
+  $("f_uptime").textContent = up != null ? fmtDur(Math.round(Number(up) + (d.age_s || 0))) : "—";
+}
+
+function fmtDur(s){
+  s = Math.max(0, s | 0);
+  const dd = Math.floor(s/86400), h = Math.floor(s%86400/3600), m = Math.floor(s%3600/60);
+  const D = L("d","g");
+  if (dd > 0) return `${dd}${D} ${h}h`;
+  if (h > 0) return `${h}h ${m}m`;
+  if (m > 0) return `${m}m`;
+  return `${s}s`;
 }
 
 /* ---------- KPI row ---------- */
