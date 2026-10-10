@@ -225,16 +225,13 @@
     <h2 id="t_gloss">Quick glossary</h2>
     <div class="gloss" id="gloss"></div>
   </section>
-
-  <footer><span id="foot"></span></footer>
- </div>
+  </main>
 </div>
 
 <script>
 const $=id=>document.getElementById(id);
 const dash=v=>(v===undefined||v===null||v==="")?null:v;
 let days=30,last=null,lang=localStorage.getItem("pw_lang")||"en",selectedDay=null;
-let rsrpPts=[],rsrpBucket="hour";
 const L=(en,it)=>lang==="it"?it:en;
 
 const PROFILES={family:{mbps:15,latSoft:120,latHard:250},uhd4k:{mbps:30,latSoft:150,latHard:300},
@@ -258,28 +255,23 @@ function sig(rsrp){
   const pos=Math.max(0,Math.min(1,(rsrp+120)/50));
   return {w,cls,pos};
 }
-const QN={excellent:L("excellent","eccellente"),good:L("good","buono"),fair:L("fair","discreto"),poor:L("poor","scarso"),very_poor:L("very poor","pessimo")};
-const QCOL={excellent:"var(--accent)",good:"var(--accent)",fair:"var(--warn)",poor:"var(--bad)",very_poor:"var(--bad)"};
 
 function fillLabels(){
   document.documentElement.lang=lang;
   $("langBtn").textContent=lang==="it"?"🌐 EN":"🌐 IT";
   $("t_title").textContent=L("Reception statistics","Statistiche presa rete");
   $("t_all").textContent=L("all","tutto");
-  $("t_live").textContent=L("Live","Live");
-  $("t_statsnav").textContent=L("Statistics","Statistiche");
-  $("t_profile").textContent=L("Usage profile","Profilo d'uso");
+  $("nav_overview").textContent=L("Overview","Panoramica");
+  $("nav_analytics").textContent=L("Analytics","Analisi");
+  $("nav_data").textContent=L("Data","Dati");
+  $("nav_settings").textContent=L("Settings","Impostazioni");
   $("t_target").textContent=L("target Mbps","target Mbps");
   $("t_meter").textContent=L("Signal strength","Potenza del segnale");
   $("h_meter").textContent=L("Where your typical signal sits. Green = comfortable, amber = usable, red = struggling.","Dove si colloca il segnale tipico. Verde = comodo, ambra = utilizzabile, rosso = in difficoltà.");
-  $("t_time").textContent=L("Signal over time","Andamento nel tempo");
-  $("h_time").textContent=L("The line is your median signal; coloured bands mark good / fair / weak zones. Hover (or tap) the line for exact values. A hollow mark at the bottom means the phone was online but didn't report a signal — usually screen-off deep sleep.","La linea è il segnale mediano; le fasce colorate indicano le zone buono / discreto / scarso. Passa il cursore (o tocca) sulla linea per i valori esatti. Un cerchietto vuoto in basso = telefono online ma senza segnale riportato — di solito deep sleep a schermo spento.");
   $("t_byday").textContent=L("Day by day","Giorno per giorno");
   $("h_byday").textContent=L("Each cell is a day — colour = overall quality. Tap a day for its hour-by-hour detail; scroll for earlier days.","Ogni cella è un giorno — colore = qualità generale. Tocca un giorno per il dettaglio ora per ora; scorri per i giorni precedenti.");
   $("t_hour").textContent=L("By hour of day","Per ora del giorno");
   $("h_hour").textContent=L("How often the signal is usable at each hour (local time). Low bars = that hour tends to be bad — often the evening.","Quanto spesso il segnale è usabile a ogni ora (ora locale). Barre basse = quell'ora tende ad andare male — spesso la sera.");
-  $("t_mix").textContent=L("Signal quality mix","Mix di qualità");
-  $("h_mix").textContent=L("What share of the time the signal was at each quality level.","Che quota di tempo il segnale è stato a ciascun livello di qualità.");
   $("t_uptime").textContent=L("Sensor uptime","Attività del sensore");
   $("h_uptime").textContent=L("Samples received per time slot. Gaps = the phone or the PC was off.","Campioni ricevuti per fascia. Buchi = telefono o PC spenti.");
   $("t_concl").textContent=L("What this means for you","Cosa significa per te");
@@ -301,8 +293,8 @@ function fillLabels(){
 function kpi(label,value,cls,sub,cap){return `<div class="kpi"><div class="l">${label}</div><div class="v ${cls||''}">${value}${sub?` <small>${sub}</small>`:''}</div><div class="cap">${cap||''}</div></div>`;}
 
 function renderKpis(h){
-  const r=h.rsrp||{},s=sig(r.median),st=h.last_stress||{};
-  const okq=h.pct_ok_quality,up=h.uplink_ok_pct,mbps=dash(st.dl_mbps);
+  // Only the analytics-unique KPIs here; the basic ones live on the Overview.
+  const st=h.last_stress||{};
   const latAdd=(st.lat_idle_ms!=null&&st.lat_load_ms!=null)?Math.round(st.lat_load_ms-st.lat_idle_ms):null;
   const t=[];
   t.push(kpi(L("Typical signal","Segnale tipico"),s.w,s.cls,r.median!=null?r.median+" dBm":"",L("median over the period","mediano nel periodo")));
