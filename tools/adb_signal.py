@@ -25,6 +25,8 @@ import time
 from datetime import datetime, timezone
 from pathlib import Path
 
+import os
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "agent"))
 from bands import classify_signal
 
 DATA_DIR = Path(__file__).parent / "data"
