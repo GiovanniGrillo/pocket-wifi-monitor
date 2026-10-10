@@ -1,0 +1,279 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light dark">
+<title>Data — Pocket-WiFi</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><defs><linearGradient id='g' x1='0' y1='0' x2='1' y2='1'><stop offset='0' stop-color='%23f7b733'/><stop offset='1' stop-color='%23f59e0b'/></linearGradient></defs><rect width='32' height='32' rx='7' fill='url(%23g)'/><text x='16' y='22' font-family='Arial,Helvetica,sans-serif' font-size='15' font-weight='bold' text-anchor='middle' fill='%233a2600'>PW</text></svg>">
+<script>try{var _t=localStorage.getItem('pw_theme');if(_t)document.documentElement.dataset.theme=_t;}catch(e){}</script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  /* ---- minimal editorial palette (warm neutral, one data trio) ---- */
+  :root{
+    --bg:#f1f0ec; --surface:#ffffff; --fill:#f6f5f1; --line:#e4e2db; --line-strong:#d6d3ca;
+    --ink:#1b1a17; --muted:#6a6760; --faint:#9c978c;
+    --ok:#3f7d54; --warn:#b5862f; --bad:#b5524b;
+    --accent:#1b1a17;            /* UI active = ink, no colored chrome */
+    --mono:ui-monospace,"SF Mono",Menlo,Consolas,monospace;
+    --sans:"Plus Jakarta Sans",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  }
+  @media (prefers-color-scheme:dark){
+    :root:not([data-theme="light"]){--bg:#141310;--surface:#1b1a16;--fill:#201e19;--line:#2d2b25;--line-strong:#3a382f;
+      --ink:#ece9e1;--muted:#9c978c;--faint:#6a6760;--ok:#6aa77f;--warn:#d2a24e;--bad:#cf6f67;--accent:#ece9e1;}
+  }
+  :root[data-theme="dark"]{--bg:#141310;--surface:#1b1a16;--fill:#201e19;--line:#2d2b25;--line-strong:#3a382f;
+    --ink:#ece9e1;--muted:#9c978c;--faint:#6a6760;--ok:#6aa77f;--warn:#d2a24e;--bad:#cf6f67;--accent:#ece9e1;}
+  *{box-sizing:border-box;}
+  html{scroll-behavior:smooth;}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:13px;line-height:1.5;-webkit-font-smoothing:antialiased;}
+  .mono{font-family:var(--mono);font-variant-numeric:tabular-nums;}
+  a{color:inherit;text-decoration:none;}
+  :focus-visible{outline:2px solid color-mix(in srgb,var(--ink) 40%,transparent);outline-offset:2px;}
+
+  .shell{display:flex;min-height:100dvh;}
+  .sidebar{width:220px;flex:none;position:sticky;top:0;align-self:flex-start;height:100dvh;display:flex;flex-direction:column;gap:4px;padding:22px 14px;border-right:1px solid var(--line);}
+  .brand{display:flex;align-items:center;gap:9px;font-weight:800;font-size:15px;letter-spacing:-.3px;padding:4px 10px 18px;}
+  .logo{width:28px;height:28px;border-radius:8px;flex:none;background:linear-gradient(140deg,#f7b733,#f59e0b);display:grid;place-items:center;color:#3a2600;font-weight:800;font-size:11px;}
+  .side-link{display:flex;align-items:center;gap:11px;font-size:13px;font-weight:600;color:var(--muted);padding:9px 11px;border-radius:8px;transition:background .15s,color .15s;cursor:pointer;}
+  .side-link:hover{color:var(--ink);background:var(--fill);}
+  .side-link.active{color:var(--ink);background:var(--fill);box-shadow:inset 2px 0 0 var(--ink);}
+  .side-link .ic{width:15px;text-align:center;opacity:.8;font-size:12px;}
+  .side-foot{margin-top:auto;padding-top:14px;border-top:1px solid var(--line);font-size:11px;color:var(--faint);}
+
+  .content{flex:1;min-width:0;padding:22px 32px 48px;}
+  .topbar{display:flex;align-items:flex-end;gap:16px;flex-wrap:wrap;margin-bottom:22px;}
+  .iconbtn{display:none;font:inherit;font-size:18px;line-height:1;background:transparent;border:1px solid var(--line);border-radius:8px;color:var(--ink);width:36px;height:36px;cursor:pointer;}
+  h1{margin:0;font-size:30px;font-weight:800;letter-spacing:-1.1px;line-height:1;}
+  .sub{margin:7px 0 0;font-size:12.5px;color:var(--muted);}
+  .spacer{flex:1;}
+
+  /* text toggles — no pills */
+  .toggle{display:inline-flex;align-items:baseline;gap:16px;}
+  .toggle button{font:inherit;font-size:12.5px;font-weight:600;color:var(--faint);background:none;border:0;padding:3px 0;cursor:pointer;letter-spacing:.2px;transition:color .15s;}
+  .toggle button:hover{color:var(--muted);}
+  .toggle button.on{color:var(--ink);box-shadow:inset 0 -2px 0 var(--ink);}
+  .tbtn{font:inherit;font-size:12.5px;font-weight:600;color:var(--muted);background:none;border:0;cursor:pointer;padding:3px 0;}
+  .tbtn:hover{color:var(--ink);}
+
+  .toolbar{display:flex;align-items:center;gap:20px;flex-wrap:wrap;padding:12px 0;border-top:1px solid var(--line);border-bottom:1px solid var(--line);margin-bottom:4px;}
+  .count{font-size:12px;color:var(--faint);font-variant-numeric:tabular-nums;}
+  .link{font:inherit;font-size:12.5px;font-weight:600;color:var(--ink);background:none;border:0;cursor:pointer;box-shadow:inset 0 -1px 0 var(--line-strong);padding-bottom:1px;}
+  .link:hover{box-shadow:inset 0 -2px 0 var(--ink);}
+
+  .tbl-scroll{overflow-x:auto;}
+  table{width:100%;border-collapse:collapse;font-size:12.5px;}
+  thead th{position:sticky;top:0;background:var(--bg);text-align:right;font-size:10.5px;font-weight:600;color:var(--faint);text-transform:lowercase;letter-spacing:.3px;padding:11px 14px;white-space:nowrap;cursor:pointer;user-select:none;border-bottom:1px solid var(--line-strong);}
+  thead th:first-child,tbody td:first-child{text-align:left;padding-left:2px;}
+  thead th.sorted{color:var(--ink);}
+  thead th .ar{opacity:.6;font-size:9px;}
+  tbody td{text-align:right;padding:9px 14px;border-bottom:1px solid var(--line);white-space:nowrap;font-variant-numeric:tabular-nums;}
+  tbody td.mono{font-family:var(--mono);}
+  tbody tr:hover td{background:var(--fill);}
+  td.op{text-align:left;color:var(--muted);font-variant-numeric:normal;}
+  .st{font-size:11px;font-weight:700;}
+  .st.online{color:var(--ok);} .st.nosignal{color:var(--warn);} .st.offline{color:var(--bad);}
+  .st::before{content:"● ";font-size:9px;vertical-align:1px;}
+  .empty{text-align:center;color:var(--faint);padding:40px 0;}
+
+  .pager{display:flex;align-items:center;gap:18px;flex-wrap:wrap;margin-top:16px;font-size:12px;color:var(--muted);}
+  .pager .spacer{flex:1;}
+  .pager select{font:inherit;font-size:12px;color:var(--ink);background:var(--surface);border:1px solid var(--line);border-radius:7px;padding:5px 8px;}
+  .pager .nav button{font:inherit;font-size:15px;line-height:1;width:30px;height:30px;border-radius:7px;border:1px solid var(--line);background:var(--surface);color:var(--ink);cursor:pointer;}
+  .pager .nav button:disabled{opacity:.4;cursor:default;}
+  .pager .nav{display:inline-flex;gap:6px;}
+
+  .scrim{display:none;position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:40;}
+  @media (max-width:900px){
+    .sidebar{position:fixed;left:0;top:0;z-index:50;background:var(--bg);transform:translateX(-100%);transition:transform .2s;}
+    .shell.nav-open .sidebar{transform:none;} .shell.nav-open .scrim{display:block;}
+    .iconbtn{display:block;} .content{padding:16px 16px 40px;} h1{font-size:24px;}
+  }
+</style>
+</head>
+<body>
+<div class="shell" id="app">
+  <div class="scrim" id="scrim"></div>
+  <aside class="sidebar">
+    <div class="brand"><span class="logo">PW</span> Pocket-WiFi</div>
+    <nav>
+      <a class="side-link" href="/"><span class="ic">◧</span><span id="nav_overview">Overview</span></a>
+      <a class="side-link" href="/stats"><span class="ic">◴</span><span id="nav_analytics">Analytics</span></a>
+      <a class="side-link active" href="/explore"><span class="ic">▦</span><span id="nav_data">Data</span></a>
+      <a class="side-link" href="/#settingsSection"><span class="ic">⚙</span><span id="nav_settings">Settings</span></a>
+    </nav>
+    <div class="side-foot"><span id="foot">—</span></div>
+  </aside>
+
+  <main class="content">
+    <header class="topbar">
+      <button class="iconbtn" id="menuBtn" aria-label="Menu">☰</button>
+      <div>
+        <h1 id="t_title">Data</h1>
+        <p class="sub" id="sub">loading…</p>
+      </div>
+      <div class="spacer"></div>
+      <nav class="toggle" id="rangeSel" aria-label="range">
+        <button data-d="1">24h</button><button data-d="7">7d</button><button data-d="30" class="on">30d</button><button data-d="365" id="t_all">all</button>
+      </nav>
+      <button class="tbtn" id="themeBtn" title="Theme" aria-label="Theme">🌙</button>
+      <button class="tbtn" id="langBtn">EN</button>
+    </header>
+
+    <div class="toolbar">
+      <nav class="toggle" id="statusSel" aria-label="status filter"></nav>
+      <span class="spacer"></span>
+      <span class="count" id="count"></span>
+      <button class="link" id="csvBtn">export CSV</button>
+    </div>
+
+    <div class="tbl-scroll">
+      <table>
+        <thead><tr id="headRow"></tr></thead>
+        <tbody id="rows"></tbody>
+      </table>
+    </div>
+
+    <div class="pager">
+      <span id="info">—</span>
+      <span class="spacer"></span>
+      <label><span id="t_perpage">rows</span>
+        <select id="perPage"><option>25</option><option selected>50</option><option>100</option><option>250</option></select>
+      </label>
+      <span class="nav"><button id="prev" aria-label="Previous">‹</button><button id="next" aria-label="Next">›</button></span>
+    </div>
+  </main>
+</div>
+
+<script>
+const $=id=>document.getElementById(id);
+let lang=localStorage.getItem("pw_lang")||"en";
+const L=(en,it)=>lang==="it"?it:en;
+let days=30, rows=[], statusF="all", page=0, perPage=50, sortKey="t", sortDir=-1;
+
+// column spec: key, label(en,it), kind(num|txt|status|time), unit
+const COLS=[
+  ["t",["time","ora"],"time",""],
+  ["operator",["operator","operatore"],"txt",""],
+  ["band",["band","banda"],"txt",""],
+  ["rsrp",["rsrp","rsrp"],"num"," dBm"],
+  ["rsrq",["rsrq","rsrq"],"num"," dB"],
+  ["sinr",["sinr","sinr"],"num"," dB"],
+  ["http",["http","http"],"num",""],
+  ["http_ms",["ms","ms"],"num",""],
+  ["batt",["batt","batt"],"num","%"],
+  ["status",["status","stato"],"status",""],
+];
+const num=v=>(v===null||v===undefined||v==="")?null:(typeof v==="number"?v:(isNaN(parseFloat(v))?null:parseFloat(v)));
+function statusOf(r){ if(r.http_ok===false) return "offline"; if(num(r.rsrp)===null) return "nosignal"; return "online"; }
+const STLBL=()=>({all:L("all","tutti"),online:"online",nosignal:L("no signal","senza segnale"),offline:"offline"});
+
+function labels(){
+  document.documentElement.lang=lang;
+  $("langBtn").textContent = lang==="it" ? "IT" : "EN";
+  $("t_title").textContent = L("Data","Dati");
+  $("t_all").textContent = L("all","tutto");
+  $("t_perpage").textContent = L("rows","righe");
+  $("nav_overview").textContent=L("Overview","Panoramica");
+  $("nav_analytics").textContent=L("Analytics","Analisi");
+  $("nav_data").textContent=L("Data","Dati");
+  $("nav_settings").textContent=L("Settings","Impostazioni");
+  $("foot").textContent=L("updates every 60 s","aggiorna ogni 60 s");
+  $("csvBtn").textContent=L("export CSV","esporta CSV");
+  // status toggle
+  const sl=STLBL();
+  $("statusSel").innerHTML=["all","online","nosignal","offline"].map(k=>`<button data-s="${k}"${k===statusF?' class="on"':''}>${sl[k]}</button>`).join("");
+  // head row
+  $("headRow").innerHTML=COLS.map(([k,lab])=>{const on=k===sortKey;return `<th data-k="${k}" class="${on?'sorted':''}">${L(lab[0],lab[1])}${on?` <span class="ar">${sortDir<0?'▼':'▲'}</span>`:''}</th>`;}).join("");
+}
+
+function filtered(){
+  let r = statusF==="all" ? rows.slice() : rows.filter(x=>statusOf(x)===statusF);
+  r.sort((a,b)=>{
+    let va, vb;
+    if(sortKey==="t"){ va=a.t||""; vb=b.t||""; return (va<vb?-1:va>vb?1:0)*sortDir; }
+    if(sortKey==="status"){ va=statusOf(a); vb=statusOf(b); return (va<vb?-1:va>vb?1:0)*sortDir; }
+    if(sortKey==="operator"||sortKey==="band"){ va=(a[sortKey]||""); vb=(b[sortKey]||""); return (va<vb?-1:va>vb?1:0)*sortDir; }
+    va=num(a[sortKey]); vb=num(b[sortKey]);
+    if(va===null&&vb===null) return 0; if(va===null) return 1; if(vb===null) return -1;
+    return (va-vb)*sortDir;
+  });
+  return r;
+}
+
+function fmtCell(r,key,kind,unit){
+  if(kind==="time"){ const d=new Date(r.t); return d.toLocaleString(lang,{month:"2-digit",day:"2-digit",hour:"2-digit",minute:"2-digit",second:"2-digit"}); }
+  if(kind==="status"){ const s=statusOf(r); return `<span class="st ${s}">${STLBL()[s]}</span>`; }
+  if(key==="operator") return r.operator||"—";
+  if(key==="band") return r.band||"—";
+  if(key==="http"){ return r.http!=null?r.http:(r.http_ok===false?"FAIL":"—"); }
+  const v=num(r[key]); return v===null?"—":(v+unit);
+}
+
+function render(){
+  const r=filtered(), total=r.length, pages=Math.max(1,Math.ceil(total/perPage));
+  if(page>=pages) page=pages-1; if(page<0) page=0;
+  const start=page*perPage, slice=r.slice(start,start+perPage);
+  $("rows").innerHTML = slice.length ? slice.map(x=>"<tr>"+COLS.map(([k,,kind,unit])=>{
+      const cls = kind==="status"?"":(k==="operator"||k==="band")?"op":"mono";
+      return `<td class="${cls}">${fmtCell(x,k,kind,unit)}</td>`;
+    }).join("")+"</tr>").join("")
+    : `<tr><td class="empty" colspan="${COLS.length}">${L("No samples in this range.","Nessun campione in questo intervallo.")}</td></tr>`;
+  $("count").textContent = L(`${total.toLocaleString()} samples`,`${total.toLocaleString()} campioni`) + (statusF!=="all"?` · ${STLBL()[statusF]}`:"");
+  $("info").textContent = total ? L(`${start+1}–${Math.min(start+perPage,total)} of ${total.toLocaleString()}`,`${start+1}–${Math.min(start+perPage,total)} di ${total.toLocaleString()}`) : "—";
+  $("prev").disabled = page<=0; $("next").disabled = page>=pages-1;
+}
+
+async function load(){
+  try{
+    const headers={}; const tok=localStorage.getItem("pw_token"); if(tok) headers["X-Token"]=tok;
+    let r=await fetch(`/recent?n=2000&days=${days}`,{cache:"no-store",headers});
+    if(r.status===403){ const t=prompt(L("Collector token:","Token del collector:")); if(t){localStorage.setItem("pw_token",t);return load();} return; }
+    rows=await r.json();
+    $("sub").textContent = L(`${rows.length.toLocaleString()} samples · last ${days===365?"all":days+"d"}`,`${rows.length.toLocaleString()} campioni · ultimi ${days===365?"tutto":days+"gg"}`);
+    render();
+  }catch(e){ $("sub").textContent=L("collector offline","collector offline"); }
+}
+
+function toCSV(){
+  const r=filtered();
+  const head=COLS.map(([k,lab])=>lab[0]).join(",");
+  const lines=r.map(x=>COLS.map(([k,,kind,unit])=>{
+    if(kind==="time") return x.t||"";
+    if(kind==="status") return statusOf(x);
+    if(k==="http") return x.http!=null?x.http:(x.http_ok===false?"FAIL":"");
+    const v=num(x[k]); return v===null?"":v;
+  }).join(","));
+  return head+"\n"+lines.join("\n");
+}
+$("csvBtn").addEventListener("click",()=>{
+  const blob=new Blob([toCSV()],{type:"text/csv"});
+  const a=document.createElement("a"); a.href=URL.createObjectURL(blob);
+  a.download=`pocket-wifi-samples-${days}d.csv`; document.body.appendChild(a); a.click();
+  setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove();},0);
+});
+
+$("rangeSel").addEventListener("click",e=>{const b=e.target.closest("button");if(!b)return;days=parseInt(b.dataset.d,10);[...$("rangeSel").children].forEach(x=>x.classList.toggle("on",x===b));page=0;load();});
+$("statusSel").addEventListener("click",e=>{const b=e.target.closest("button");if(!b)return;statusF=b.dataset.s;[...$("statusSel").children].forEach(x=>x.classList.toggle("on",x===b));page=0;render();});
+$("headRow").addEventListener("click",e=>{const th=e.target.closest("th");if(!th)return;const k=th.dataset.k;if(k===sortKey)sortDir*=-1;else{sortKey=k;sortDir=(k==="t")?-1:1;}labels();render();});
+$("perPage").addEventListener("change",e=>{perPage=parseInt(e.target.value,10)||50;page=0;render();});
+$("prev").addEventListener("click",()=>{page--;render();});
+$("next").addEventListener("click",()=>{page++;render();});
+$("langBtn").addEventListener("click",()=>{lang=lang==="it"?"en":"it";localStorage.setItem("pw_lang",lang);labels();render();});
+
+function closeNav(){$("app").classList.remove("nav-open");}
+$("menuBtn").addEventListener("click",()=>$("app").classList.toggle("nav-open"));
+$("scrim").addEventListener("click",closeNav);
+document.querySelectorAll(".side-link").forEach(a=>a.addEventListener("click",()=>{if(window.innerWidth<=900)closeNav();}));
+
+function curTheme(){return document.documentElement.dataset.theme||(matchMedia("(prefers-color-scheme:dark)").matches?"dark":"light");}
+function syncThemeBtn(){$("themeBtn").textContent=curTheme()==="dark"?"☀️":"🌙";}
+$("themeBtn").addEventListener("click",()=>{const t=curTheme()==="dark"?"light":"dark";document.documentElement.dataset.theme=t;try{localStorage.setItem("pw_theme",t);}catch(e){}syncThemeBtn();});
+syncThemeBtn();
+
+labels(); load(); setInterval(load,60000);
+</script>
+</body>
+</html>
