@@ -367,7 +367,8 @@ function render(d){
 
   const batt = dash(f.batt_pct) ?? dash(f.battery_percent);
   const plugged = f.batt_plugged || f.battery_charging === "1";
-  $("f_batt").textContent = batt != null ? batt+"%"+(plugged?" ⚡":"") : "—";
+  const battIcon = plugged ? "⚡" : (batt != null && batt <= 15 ? "🪫" : "🔋");
+  $("f_batt").textContent = batt != null ? battIcon+" "+batt+"%" : "—";
   const tp = dash(f.batt_temp); const tEl = $("f_temp");
   tEl.textContent = tp != null ? tp+" °C" : "—";
   tEl.style.color = (tp!=null && tp>=44) ? "var(--bad)" : (tp!=null && tp>=40) ? "var(--warn)" : "";
