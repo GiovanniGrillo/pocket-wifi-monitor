@@ -55,6 +55,30 @@
   .seg button.on{background:var(--accent);color:#06240f;font-weight:600;}
   :focus-visible{outline:2px solid color-mix(in srgb,var(--accent) 60%,transparent);outline-offset:2px;}
 
+  /* shell: sidebar + content */
+  .shell{display:flex;min-height:100vh;}
+  .sidebar{width:232px;flex:none;position:sticky;top:0;align-self:flex-start;height:100vh;display:flex;flex-direction:column;gap:6px;padding:20px 16px;background:var(--panel);border-right:1px solid var(--line);}
+  .brand{padding:4px 8px 16px;}
+  .side-nav{display:flex;flex-direction:column;gap:3px;}
+  .side-link{display:flex;align-items:center;gap:10px;font-size:13px;font-weight:600;color:var(--dim);text-decoration:none;padding:9px 12px;border-radius:10px;transition:background .15s,color .15s;cursor:pointer;}
+  .side-link:hover{color:var(--txt);background:var(--panel-2);}
+  .side-link.active{background:var(--ink-pill);color:var(--pill-ink);}
+  .side-link .ic{width:16px;text-align:center;opacity:.9;}
+  .side-foot{margin-top:auto;padding-top:12px;border-top:1px solid var(--line);font-size:11px;color:var(--faint);}
+  .content{flex:1;min-width:0;padding:16px 26px 40px;max-width:1240px;}
+  .topbar{display:flex;align-items:center;gap:14px;flex-wrap:wrap;position:sticky;top:0;z-index:20;padding:10px 0 14px;margin-bottom:8px;background:color-mix(in srgb,var(--bg) 86%,transparent);backdrop-filter:blur(8px);}
+  .tb-title .page-title{font-size:26px;} .tb-actions{display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
+  button.ghost{font:inherit;font-size:12px;font-weight:600;color:var(--dim);background:var(--panel);border:1px solid var(--line);border-radius:999px;padding:7px 12px;cursor:pointer;display:inline-flex;align-items:center;gap:5px;transition:background .15s,border-color .15s,color .15s;}
+  button.ghost:hover{color:var(--txt);background:var(--panel-2);}
+  .iconbtn{display:none;font:inherit;font-size:18px;line-height:1;background:var(--panel);border:1px solid var(--line);border-radius:10px;color:var(--txt);width:38px;height:38px;cursor:pointer;}
+  select.filter{font:inherit;font-size:12px;font-weight:600;color:var(--dim);background:var(--panel);border:1px solid var(--line);border-radius:999px;padding:7px 11px;cursor:pointer;}
+  .scrim{display:none;position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:40;}
+  @media (max-width:900px){
+    .sidebar{position:fixed;left:0;top:0;z-index:50;transform:translateX(-100%);transition:transform .2s;box-shadow:var(--shadow);}
+    .shell.nav-open .sidebar{transform:none;} .shell.nav-open .scrim{display:block;}
+    .iconbtn{display:block;} .content{padding:14px 16px 36px;} .tb-title .page-title{font-size:21px;}
+  }
+
   .controls{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:16px;}
   .controls label{font-size:10px;color:var(--faint);text-transform:uppercase;letter-spacing:.7px;}
   select,input[type=number]{font:inherit;font-size:12.5px;background:var(--panel);color:var(--txt);border:1px solid var(--line);border-radius:6px;padding:6px 9px;}
@@ -100,16 +124,6 @@
   .meter-val .w{font-size:16px;font-weight:600;} .meter-val .n{font-family:var(--mono);color:var(--dim);font-size:12px;}
 
   svg{display:block;width:100%;height:auto;}
-  .chartwrap{position:relative;touch-action:none;}
-  #rsrpChart{cursor:crosshair;}
-  .charttip{position:absolute;left:0;top:0;pointer-events:none;z-index:6;background:var(--panel);border:1px solid var(--line);border-radius:10px;box-shadow:var(--shadow);padding:7px 10px;font-size:11.5px;line-height:1.45;white-space:nowrap;transform:translate(-50%,calc(-100% - 10px));}
-  .charttip .tw{font-weight:700;color:var(--txt);}
-  .charttip .tv{font-family:var(--mono);color:var(--txt);}
-  .charttip .tm{color:var(--faint);}
-  .qbar{display:flex;align-items:center;gap:10px;margin:6px 0;font-size:12.5px;}
-  .qbar .name{width:92px;color:var(--dim);} .qbar .track{flex:1;height:13px;background:var(--line);border-radius:4px;overflow:hidden;}
-  .qbar .fill{height:100%;border-radius:4px;} .qbar .pct{width:40px;text-align:right;font-family:var(--mono);}
-  .legend{font-size:10.5px;color:var(--faint);margin-top:7px;}
   .callout{font-size:12px;margin-top:9px;padding:8px 11px;border-radius:6px;background:var(--panel-2);border:1px solid var(--line-soft);}
   .daystrip{display:flex;gap:4px;overflow-x:auto;padding:2px 0 8px;scrollbar-width:thin;}
   .daycell{flex:0 0 auto;min-width:46px;cursor:pointer;border:1px solid var(--line);border-radius:6px;padding:6px 5px 5px;background:var(--panel-2);text-align:center;transition:border-color .15s;}
@@ -127,33 +141,35 @@
 </style>
 </head>
 <body>
-<div class="wrap">
- <div class="app">
-  <nav class="nav">
+<div class="shell" id="app">
+  <div class="scrim" id="scrim"></div>
+  <aside class="sidebar">
     <div class="brand"><span class="logo">PW</span> Pocket-WiFi</div>
-    <div class="navlinks">
-      <a class="navlink" href="/" id="t_live">Live</a>
-      <a class="navlink active" id="t_statsnav">Statistics</a>
-    </div>
-    <div class="spacer"></div>
-    <div class="nav-actions">
-      <button class="btn" id="themeBtn" title="Theme" aria-label="Theme">🌙</button>
-      <button class="btn" id="langBtn">🌐 IT</button>
-    </div>
-  </nav>
+    <nav class="side-nav">
+      <a class="side-link" href="/"><span class="ic">▚</span><span id="nav_overview">Overview</span></a>
+      <a class="side-link active" href="/stats"><span class="ic">▤</span><span id="nav_analytics">Analytics</span></a>
+      <a class="side-link" href="/#dataSection"><span class="ic">▦</span><span id="nav_data">Data</span></a>
+      <a class="side-link" href="/#settingsSection"><span class="ic">⚙</span><span id="nav_settings">Settings</span></a>
+    </nav>
+    <div class="side-foot"><span id="foot">—</span></div>
+  </aside>
 
-  <div class="hgroup">
-    <div>
-      <h1 class="page-title" id="t_title">Reception statistics</h1>
-      <p class="page-sub" id="sub">loading…</p>
-    </div>
-  </div>
-
-  <div class="controls">
-    <label id="t_profile">Usage profile</label>
-    <select id="profile"></select>
-    <span id="customWrap" style="display:none"><input type="number" id="customMbps" min="1" max="1000" value="10"> <span class="muted" id="t_target">target Mbps</span></span>
-  </div>
+  <main class="content" id="top">
+    <header class="topbar">
+      <button class="iconbtn" id="menuBtn" aria-label="Menu">☰</button>
+      <div class="tb-title">
+        <h1 class="page-title" id="t_title">Reception statistics</h1>
+        <p class="page-sub" id="sub">loading…</p>
+      </div>
+      <div class="spacer"></div>
+      <div class="tb-actions">
+        <select class="filter" id="profile"></select>
+        <span id="customWrap" style="display:none"><input type="number" id="customMbps" min="1" max="1000" value="10"> <span class="muted" id="t_target">target Mbps</span></span>
+        <div class="seg" id="segDays"><button data-d="7">7</button><button data-d="30" class="on">30</button><button data-d="365" id="t_all">all</button></div>
+        <button class="ghost" id="themeBtn" title="Theme" aria-label="Theme">🌙</button>
+        <button class="ghost" id="langBtn">🌐 IT</button>
+      </div>
+    </header>
 
   <!-- verdict + plain summary -->
   <section class="hero">
@@ -173,18 +189,6 @@
   <div class="kpis" id="kpis"></div>
 
   <section class="card">
-    <div class="card-head">
-      <div><h2 id="t_time">Signal over time</h2><p class="hint" id="h_time"></p></div>
-      <div class="seg" id="segDays"><button data-d="7">7</button><button data-d="30" class="on">30</button><button data-d="365" id="t_all">all</button></div>
-    </div>
-    <div class="chartwrap" id="rsrpWrap">
-      <svg id="rsrpChart" viewBox="0 0 800 220" preserveAspectRatio="none"></svg>
-      <div class="charttip" id="rsrpTip" hidden></div>
-    </div>
-    <div class="legend" id="rsrpLegend"></div>
-  </section>
-
-  <section class="card">
     <h2 id="t_byday">Day by day</h2>
     <p class="hint" id="h_byday"></p>
     <div class="daystrip" id="dayStrip"></div>
@@ -197,12 +201,6 @@
     <p class="hint" id="h_hour"></p>
     <svg id="hourChart" viewBox="0 0 800 150" preserveAspectRatio="none"></svg>
     <div class="callout" id="hourCallout"></div>
-  </section>
-
-  <section class="card">
-    <h2 id="t_mix">Signal quality mix</h2>
-    <p class="hint" id="h_mix"></p>
-    <div id="qdist"></div>
   </section>
 
   <section class="card">
