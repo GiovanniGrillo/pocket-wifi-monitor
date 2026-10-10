@@ -202,97 +202,152 @@
   <div class="scrim" id="scrim"></div>
   <aside class="sidebar" id="sidebar">
     <div class="brand"><span class="logo">PW</span> Pocket-WiFi</div>
-    <div class="navlinks">
-      <a class="navlink active">Live</a>
-      <a class="navlink" href="/stats" data-i18n="stats_link">Statistics</a>
-    </div>
-    <div class="spacer"></div>
-    <div class="nav-actions">
+    <nav class="side-nav">
+      <a class="side-link active" href="#top"><span class="ic">▚</span><span data-i18n="nav_overview">Overview</span></a>
+      <a class="side-link" href="/stats"><span class="ic">▤</span><span data-i18n="nav_analytics">Analytics</span></a>
+      <a class="side-link" href="#dataSection"><span class="ic">▦</span><span data-i18n="nav_data">Data</span></a>
+      <a class="side-link" href="#settingsSection"><span class="ic">⚙</span><span data-i18n="nav_settings">Settings</span></a>
+    </nav>
+    <div class="side-foot">
       <span class="pill" id="statusPill"><span class="dot"></span><span id="statusText">—</span></span>
-      <button class="ghost" id="ctrlBtn">⏹ Stop</button>
-      <button class="ghost" id="themeBtn" title="Theme" aria-label="Theme">🌙</button>
-      <button class="ghost" id="langBtn">🌐 IT</button>
-      <button class="ghost" id="pauseBtn" data-i18n="pause">Pause</button>
+      <div class="side-age">⟳ <span id="c_age">—</span></div>
     </div>
-  </nav>
+  </aside>
 
-  <div class="banner" id="simBanner">
-    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 9v4m0 4h.01M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0Z"/></svg>
-    <div id="simBannerText"></div>
-  </div>
-  <div class="banner" id="alertBanner"></div>
+  <main class="content" id="top">
+    <header class="topbar">
+      <button class="iconbtn" id="menuBtn" aria-label="Menu">☰</button>
+      <div class="tb-title">
+        <h1 class="page-title" id="heroOp">—</h1>
+        <p class="page-sub"><span id="heroNet">—</span> · <span id="sub">—</span></p>
+      </div>
+      <div class="spacer"></div>
+      <div class="tb-actions">
+        <input class="search" id="searchBox" type="search" autocomplete="off">
+        <div class="seg" id="rangeSeg">
+          <button data-d="1" class="on">24h</button><button data-d="7">7g</button><button data-d="30">30g</button><button data-d="365" data-i18n="range_all">all</button>
+        </div>
+        <button class="ghost" id="themeBtn" title="Theme" aria-label="Theme">🌙</button>
+        <button class="ghost" id="langBtn">🌐 IT</button>
+        <button class="ghost" id="pauseBtn" data-i18n="pause">Pause</button>
+      </div>
+    </header>
 
-  <div class="hgroup">
-    <div>
-      <h1 class="page-title" id="heroOp">—</h1>
-      <p class="page-sub"><span id="heroNet">—</span> · <span id="sub">—</span></p>
+    <div class="banner" id="simBanner">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 9v4m0 4h.01M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0Z"/></svg>
+      <div id="simBannerText"></div>
     </div>
-    <div class="hgroup-right">
-      <span class="datepill">⟳ <span id="c_age">—</span></span>
-    </div>
-  </div>
+    <div class="banner" id="alertBanner"></div>
 
-  <div class="grid">
-    <!-- Signal (hero) -->
-    <section class="card c-8">
-      <div class="card-head"><h2 data-i18n="signal">Signal</h2><div class="menu">⋯</div></div>
-      <div class="sig-top">
-        <div class="verdict-chip"><span class="q q-none" id="f_quality">—</span><span class="ql" id="f_quality_lbl"></span></div>
-        <div class="bars-wrap">
-          <div class="bars" id="bars"><i></i><i></i><i></i><i></i><i></i></div>
-          <div class="bars-n"><span id="heroBars">0</span><small>/5</small></div>
+    <!-- KPI row -->
+    <div class="kpis" id="kpiRow"></div>
+
+    <!-- charts -->
+    <div class="grid">
+      <section class="card c-8">
+        <div class="card-head">
+          <div><h2 data-i18n="chart_title">Signal over time</h2><p class="hint" data-i18n="chart_hint">Hover the line for exact values.</p></div>
+        </div>
+        <div class="chartwrap" id="rsrpWrap">
+          <svg id="rsrpChart" viewBox="0 0 800 220" preserveAspectRatio="none"></svg>
+          <div class="charttip" id="rsrpTip" hidden></div>
+        </div>
+        <div class="legend" id="rsrpLegend"></div>
+      </section>
+      <section class="card c-4">
+        <div class="card-head"><div><h2 data-i18n="mix_title">Quality mix</h2><p class="hint" data-i18n="mix_hint">Share of time at each level.</p></div></div>
+        <div class="mixgrid">
+          <svg id="mixChart" viewBox="0 0 140 140"></svg>
+          <div class="mix-legend" id="mixLegend"></div>
+        </div>
+      </section>
+    </div>
+
+    <!-- realtime detail cards -->
+    <div class="grid">
+      <section class="card c-8">
+        <div class="card-head"><h2 data-i18n="signal">Signal</h2><div class="menu">⋯</div></div>
+        <div class="sig-top">
+          <div class="verdict-chip"><span class="q q-none" id="f_quality">—</span><span class="ql" id="f_quality_lbl"></span></div>
+          <div class="bars-wrap">
+            <div class="bars" id="bars"><i></i><i></i><i></i><i></i><i></i></div>
+            <div class="bars-n"><span id="heroBars">0</span><small>/5</small></div>
+          </div>
+        </div>
+        <div class="rows" id="sigRows"></div>
+      </section>
+
+      <section class="card c-4">
+        <div class="card-head"><h2 data-i18n="card_network">Network</h2><div class="menu">⋯</div></div>
+        <div class="rows">
+          <div class="row"><span class="k" data-i18n="k_operator">Operator</span><span class="v" id="f_operator">—</span></div>
+          <div class="row"><span class="k" data-i18n="k_plmn">Code (MCC/MNC)</span><span class="v" id="f_plmn">—</span></div>
+          <div class="row"><span class="k" data-i18n="k_tech">Technology</span><span class="v" id="f_tech">—</span></div>
+          <div class="row"><span class="k" data-i18n="k_status">Status</span><span class="v" id="f_conn">—</span></div>
+        </div>
+      </section>
+
+      <section class="card c-4">
+        <div class="card-head"><h2 data-i18n="card_conn">Connectivity (data)</h2><div class="menu">⋯</div></div>
+        <div class="stat2">
+          <div><div class="big" id="c_http">—</div><div class="u" data-i18n="u_http">HTTP response</div></div>
+          <div><div class="big" id="c_lat">—</div><div class="u" data-i18n="u_lat">latency</div></div>
+        </div>
+        <div class="catline"><span class="cl-k" data-i18n="k_dataok">Data works</span><span class="cl-v" id="c_ok" style="color:var(--green)">—</span></div>
+        <div class="catline"><span class="cl-k" data-i18n="k_link">Link state</span><span class="cl-v" id="c_link" style="color:var(--blue)">—</span></div>
+      </section>
+
+      <section class="card c-4">
+        <div class="card-head"><h2 data-i18n="card_device">Device</h2><div class="menu">⋯</div></div>
+        <div class="rows">
+          <div class="row"><span class="k" data-i18n="k_batt">Battery</span><span class="v" id="f_batt">—</span></div>
+          <div class="row"><span class="k" data-i18n="k_temp">Temperature</span><span class="v" id="f_temp">—</span></div>
+          <div class="row"><span class="k" data-i18n="k_sim">SIM</span><span class="v" id="f_sim">—</span></div>
+        </div>
+      </section>
+
+      <!-- Settings / sensor controls + stress test -->
+      <section class="card c-8" id="settingsSection">
+        <div class="card-head"><h2 data-i18n="card_settings">Settings &amp; stress test</h2><div class="menu">⋯</div></div>
+        <div class="ctrl-area">
+          <div class="catline" style="padding-top:0"><span class="cl-k" data-i18n="k_sensor">Remote sensor</span><button class="ghost" id="ctrlBtn">⏹ Stop</button></div>
+        </div>
+        <div class="hero-num" id="st_mbps">—</div>
+        <div style="margin:4px 0 12px"><span class="q q-none" id="st_verdict" style="font-weight:700">—</span> <span class="u" id="st_verdict_lbl" style="color:var(--faint);font-size:11.5px"></span></div>
+        <div class="catline"><span class="cl-k" data-i18n="k_latload">Latency idle→load</span><span class="cl-v v" id="st_lat">—</span></div>
+        <div class="catline"><span class="cl-k" data-i18n="k_dataused">Data used</span><span class="cl-v v" id="st_data">—</span></div>
+        <div class="catline"><span class="cl-k" data-i18n="k_when">When</span><span class="cl-v v" id="st_when">—</span></div>
+        <button class="ghost btn-wide" id="stressBtn">▶ Run stress test</button>
+        <div id="st_status" style="font-size:11px;color:var(--faint);margin-top:8px;min-height:14px"></div>
+      </section>
+    </div>
+
+    <!-- data table -->
+    <section class="card" id="dataSection">
+      <div class="card-head">
+        <div><h2 data-i18n="tbl_title">Recent samples</h2><p class="hint" data-i18n="tbl_hint">Latest readings from the phone.</p></div>
+        <div class="table-tools">
+          <select class="filter" id="statusFilter"></select>
         </div>
       </div>
-      <div class="rows" id="sigRows"></div>
-    </section>
-
-    <!-- Network -->
-    <section class="card c-4">
-      <div class="card-head"><h2 data-i18n="card_network">Network</h2><div class="menu">⋯</div></div>
-      <div class="rows">
-        <div class="row"><span class="k" data-i18n="k_operator">Operator</span><span class="v" id="f_operator">—</span></div>
-        <div class="row"><span class="k" data-i18n="k_plmn">Code (MCC/MNC)</span><span class="v" id="f_plmn">—</span></div>
-        <div class="row"><span class="k" data-i18n="k_tech">Technology</span><span class="v" id="f_tech">—</span></div>
-        <div class="row"><span class="k" data-i18n="k_status">Status</span><span class="v" id="f_conn">—</span></div>
+      <div class="tbl-scroll">
+        <table class="data">
+          <thead><tr>
+            <th data-i18n="th_time">Time</th><th data-i18n="th_op">Operator</th><th data-i18n="th_band">Band</th>
+            <th data-i18n="th_rsrp">RSRP</th><th data-i18n="th_http">HTTP</th><th data-i18n="th_status">Status</th>
+          </tr></thead>
+          <tbody id="tblBody"></tbody>
+        </table>
+      </div>
+      <div class="pager">
+        <span id="tblInfo">—</span>
+        <button id="tblPrev" aria-label="Previous">‹</button>
+        <button id="tblNext" aria-label="Next">›</button>
       </div>
     </section>
 
-    <!-- Connectivity -->
-    <section class="card c-4">
-      <div class="card-head"><h2 data-i18n="card_conn">Connectivity (data)</h2><div class="menu">⋯</div></div>
-      <div class="stat2">
-        <div><div class="big" id="c_http">—</div><div class="u" data-i18n="u_http">HTTP response</div></div>
-        <div><div class="big" id="c_lat">—</div><div class="u" data-i18n="u_lat">latency</div></div>
-      </div>
-      <div class="catline"><span class="cl-k" data-i18n="k_dataok">Data works</span><span class="cl-v" id="c_ok" style="color:var(--green)">—</span></div>
-      <div class="catline"><span class="cl-k" data-i18n="k_link">Link state</span><span class="cl-v" id="c_link" style="color:var(--blue)">—</span></div>
-    </section>
-
-    <!-- Device -->
-    <section class="card c-4">
-      <div class="card-head"><h2 data-i18n="card_device">Device</h2><div class="menu">⋯</div></div>
-      <div class="rows">
-        <div class="row"><span class="k" data-i18n="k_batt">Battery</span><span class="v" id="f_batt">—</span></div>
-        <div class="row"><span class="k" data-i18n="k_temp">Temperature</span><span class="v" id="f_temp">—</span></div>
-        <div class="row"><span class="k" data-i18n="k_sim">SIM</span><span class="v" id="f_sim">—</span></div>
-      </div>
-    </section>
-
-    <!-- Stress test -->
-    <section class="card c-4">
-      <div class="card-head"><h2 data-i18n="card_stress">Stress test</h2><div class="menu">⋯</div></div>
-      <div class="hero-num" id="st_mbps">—</div>
-      <div style="margin:4px 0 12px"><span class="q q-none" id="st_verdict" style="font-weight:700">—</span> <span class="u" id="st_verdict_lbl" style="color:var(--faint);font-size:11.5px"></span></div>
-      <div class="catline"><span class="cl-k" data-i18n="k_latload">Latency idle→load</span><span class="cl-v v" id="st_lat">—</span></div>
-      <div class="catline"><span class="cl-k" data-i18n="k_dataused">Data used</span><span class="cl-v v" id="st_data">—</span></div>
-      <div class="catline"><span class="cl-k" data-i18n="k_when">When</span><span class="cl-v v" id="st_when">—</span></div>
-      <button class="ghost btn-wide" id="stressBtn">▶ Run stress test</button>
-      <div id="st_status" style="font-size:11px;color:var(--faint);margin-top:8px;min-height:14px"></div>
-    </section>
-  </div>
-
-  <footer><span class="live"><span class="dot"></span><span id="footText">updating every 3 s</span></span></footer>
- </div>
+    <footer><span class="live"><span class="dot"></span><span id="footText">updating every 3 s</span></span></footer>
+  </main>
 </div>
 
 <script>
@@ -303,11 +358,21 @@ const dash = v => (v === undefined || v === null || v === "") ? null : v;
 
 let lang = localStorage.getItem("pw_lang") || "en";
 const T = {
-  en:{stats_link:"Statistics",pause:"Pause",resume:"Resume",signal:"Signal",
+  en:{nav_overview:"Overview",nav_analytics:"Analytics",nav_data:"Data",nav_settings:"Settings",range_all:"all",
+      pause:"Pause",resume:"Resume",signal:"Signal",
       card_network:"Network",k_operator:"Operator",k_plmn:"Code (MCC/MNC)",k_tech:"Technology",k_status:"Status",
-      card_conn:"Connectivity (data)",u_http:"HTTP response",u_lat:"latency",k_dataok:"Data works",k_link:"Link state",k_updated:"Last update",
+      card_conn:"Connectivity (data)",u_http:"HTTP response",u_lat:"latency",k_dataok:"Data works",k_link:"Link state",
       card_device:"Device",k_batt:"Battery",k_temp:"Temperature",k_sim:"SIM",
-      card_stress:"Stress test",k_dl:"Download",k_latload:"Latency idle→load",k_dataused:"Data used",k_when:"When",
+      card_settings:"Settings & stress test",k_sensor:"Remote sensor",k_latload:"Latency idle→load",k_dataused:"Data used",k_when:"When",
+      chart_title:"Signal over time",chart_hint:"Median signal per bucket. Hover the line for exact values.",
+      mix_title:"Quality mix",mix_hint:"Share of time at each level.",mix_center:"usable",
+      tbl_title:"Recent samples",tbl_hint:"Latest readings from the phone.",
+      th_time:"Time",th_op:"Operator",th_band:"Band",th_rsrp:"RSRP",th_http:"HTTP",th_status:"Status",
+      st_online:"Online",st_nosignal:"No signal",st_offline:"Offline",
+      search_ph:"Filter…",f_all:"All status",no_rows:"No samples yet.",
+      kpi_signal:"Typical signal",kpi_usable:"Usable time",kpi_reliab:"Data reliability",kpi_speed:"Measured speed",kpi_dataused:"Data used",
+      cap_signal:"median this period",cap_usable:"quality ≥ fair",cap_reliab:"HTTP 204 ok",cap_speed:"last stress test",cap_dataused:"estimate this period",
+      page_of:(a,b,n)=>`${a}–${b} of ${n}`,
       banner:"<b>No SIM detected.</b> The dashboard is ready: signal, operator and cell will appear as soon as a SIM is inserted and the device registers.",
       unreachable:"not reachable",device_off:"phone not connected or off",no_sim:"no SIM",connected:"connected",no_service:"no service",searching:"searching…",
       pill_stopped:"stopped (overheat)",
@@ -315,6 +380,7 @@ const T = {
       alarm_stopped:"<b>Sensor stopped.</b> Remote stop command.",
       warn_hot:t=>`<b>High temperature:</b> ${t}°C — still monitoring; it will stop if it keeps rising.`,
       qlbl:"LTE quality (RSRP/SINR)",qnone:"no reading",no_sig:"no signal data",yes:"yes",no:"no",updating:"updating every 3 s",paused:"paused",
+      chart_nosig:"signal not reported (screen-off)",daily_median:"daily median",hourly_median:"hourly median",
       stop:"⏹ Stop sensor",resume_sensor:"▶ Resume sensor",run_stress:"▶ Run stress test",running:"⏳ running…",
       budget_prompt:"Data budget for the test (MB):",token_prompt:"Collector token:",confirm_stop:"Stop the sensor on the phone? It will stop within one cycle.",
       run_a_test:"run a test",under_load:"under load",ago_s:n=>`${n} s ago`,ago_m:n=>`${n} min ago`,
@@ -322,9 +388,10 @@ const T = {
       q:{excellent:"excellent",good:"good",fair:"fair",poor:"poor",very_poor:"very poor"},
       sim:{ready:"ready",valid:"valid",absent:"absent"},
       sv:{good:"good",borderline:"borderline",bad:"weak"}},
-  it:{stats_link:"Statistiche",pause:"Pausa",resume:"Riprendi",signal:"Segnale",
+  it:{nav_overview:"Panoramica",nav_analytics:"Analisi",nav_data:"Dati",nav_settings:"Impostazioni",range_all:"tutto",
+      pause:"Pausa",resume:"Riprendi",signal:"Segnale",
       card_network:"Rete",k_operator:"Operatore",k_plmn:"Codice (MCC/MNC)",k_tech:"Tecnologia",k_status:"Stato",
-      card_conn:"Connettività (dato)",u_http:"risposta HTTP",u_lat:"latenza",k_dataok:"Il dato passa",k_link:"Stato link",k_updated:"Ultimo aggiornamento",
+      card_conn:"Connettività (dato)",u_http:"risposta HTTP",u_lat:"latenza",k_dataok:"Il dato passa",k_link:"Stato link",
       card_device:"Dispositivo",k_batt:"Batteria",k_temp:"Temperatura",k_sim:"SIM",
       card_stress:"Stress test",k_dl:"Download",k_latload:"Latenza idle→carico",k_dataused:"Dati usati",k_when:"Quando",
       banner:"<b>Nessuna SIM rilevata.</b> La dashboard è pronta: segnale, operatore e cella compariranno appena inserisci una SIM e il device si aggancia alla rete.",
