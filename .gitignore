@@ -1,0 +1,15 @@
+# Runtime data: may contain operator, cell and location-related metadata.
+collector/data/*
+!collector/data/.gitkeep
+
+# Local config: keep only the redacted example in the repo.
+.env
+.env.*
+!.env.example
+
+# Logs, caches, virtualenvs.
+*.log
+__pycache__/
+*.py[cod]
+.venv/
+venv/
