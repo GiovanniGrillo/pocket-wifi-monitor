@@ -51,6 +51,17 @@ Se il segnale è vuoto:
 5. considera le differenze MIUI/Android: l'agente continua comunque a misurare
    la connettività HTTP.
 
+## Buchi di segnale a schermo spento
+
+Su MIUI/Android, con lo schermo spento e il telefono in sospensione profonda
+(*doze*), `termux-telephony-cellinfo` può restituire vuoto: il modem resta
+connesso e l'uplink HTTP continua a funzionare, ma il valore di RSRP/banda non
+viene fornito dal sistema in quel momento. Nel grafico "Signal over time" questi
+campioni appaiono come cerchietti vuoti sul fondo, non come dati persi: lo
+store-and-forward li ha inviati, manca solo il numero del segnale, e non è
+recuperabile a posteriori perché il sistema non l'ha mai prodotto.
+
+Per ridurre i buchi (soprattutto di notte):
 ## Avvio automatico
 
 Con Termux:Boot:
