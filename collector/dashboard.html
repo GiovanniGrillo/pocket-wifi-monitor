@@ -397,7 +397,7 @@ const T = {
       tbl_title:"Campioni recenti",tbl_hint:"Ultime letture dal telefono.",
       th_time:"Ora",th_op:"Operatore",th_band:"Banda",th_rsrp:"RSRP",th_http:"HTTP",th_status:"Stato",
       st_online:"Online",st_nosignal:"Senza segnale",st_offline:"Offline",
-      search_ph:"Filtra…",f_all:"Tutti gli stati",no_rows:"Ancora nessun campione.",
+      f_all:"Tutti gli stati",no_rows:"Ancora nessun campione.",
       kpi_signal:"Segnale tipico",kpi_usable:"Tempo usabile",kpi_reliab:"Affidabilità dato",kpi_speed:"Velocità misurata",kpi_dataused:"Dati usati",
       cap_signal:"mediano nel periodo",cap_usable:"qualità ≥ discreta",cap_reliab:"HTTP 204 ok",cap_speed:"ultimo stress test",cap_dataused:"stima nel periodo",
       page_of:(a,b,n)=>`${a}–${b} di ${n}`,
@@ -433,7 +433,6 @@ function applyStatic(){
   $("langBtn").textContent = lang === "it" ? "🌐 EN" : "🌐 IT";
   $("simBannerText").innerHTML = tr().banner;
   $("pauseBtn").textContent = paused ? tr().resume : tr().pause;
-  $("searchBox").placeholder = tr().search_ph;
   fillStatusFilter();
 }
 function fillStatusFilter(){
@@ -642,10 +641,8 @@ function renderMix(h){
 function statusOf(r){ if(r.http_ok===false) return "offline"; if(r.rsrp==null||r.rsrp==="") return "nosignal"; return "online"; }
 function renderTable(){
   if(!recent){ return; }
-  const q=($("searchBox").value||"").toLowerCase().trim();
   const sf=$("statusFilter").value||"all";
-  const rows=recent.filter(r=>{ const st=statusOf(r); if(sf!=="all"&&st!==sf) return false;
-    if(q){ const hay=`${r.operator||""} ${r.band||""} ${r.net||""} ${r.rsrp??""}`.toLowerCase(); if(!hay.includes(q)) return false; } return true; });
+  const rows=recent.filter(r=> sf==="all" || statusOf(r)===sf);
   const total=rows.length, pages=Math.max(1,Math.ceil(total/TBL_SIZE));
   if(tblPage>=pages) tblPage=pages-1; if(tblPage<0) tblPage=0;
   const start=tblPage*TBL_SIZE, slice=rows.slice(start,start+TBL_SIZE);
@@ -756,7 +753,6 @@ $("langBtn").addEventListener("click", ()=>{
 $("rangeSeg").addEventListener("click", e=>{ const b=e.target.closest("button"); if(!b) return;
   days = parseInt(b.dataset.d,10); [...$("rangeSeg").children].forEach(x=>x.classList.toggle("on", x===b));
   tblPage=0; loadAnalytics(); });
-$("searchBox").addEventListener("input", ()=>{ tblPage=0; renderTable(); });
 $("statusFilter").addEventListener("change", ()=>{ tblPage=0; renderTable(); });
 $("tblPrev").addEventListener("click", ()=>{ tblPage--; renderTable(); });
 $("tblNext").addEventListener("click", ()=>{ tblPage++; renderTable(); });
