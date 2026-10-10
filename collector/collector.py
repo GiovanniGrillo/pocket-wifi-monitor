@@ -327,10 +327,15 @@ def _history(days: int) -> dict:
         early = statistics.median(rsrps[:k])
         late = statistics.median(rsrps[-k:])
         diff = round(late - early)
+        # Structured trend so the UI can localise it; the Italian sentence
+        # below stays only for the server-side _conclusions list.
+        h["trend_db"] = abs(diff)
         if abs(diff) >= 3:
+            h["trend_dir"] = "up" if diff > 0 else "down"
             h["trend"] = (f"Andamento: il segnale è {'migliorato' if diff > 0 else 'peggiorato'} "
                           f"di ~{abs(diff)} dB dall'inizio del periodo.")
         else:
+            h["trend_dir"] = "flat"
             h["trend"] = "Andamento: segnale sostanzialmente stabile nel periodo."
 
     # Breakdown by hour-of-day (LOCAL time) — reveals peak-hour congestion,
