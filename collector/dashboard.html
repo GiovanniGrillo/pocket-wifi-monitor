@@ -96,7 +96,10 @@
   .verdict-chip{display:inline-flex;flex-direction:column;gap:4px;padding:14px 18px;border-radius:14px;min-width:150px;
     background:var(--panel-2);border:1px solid var(--line);transition:background .2s,border-color .2s;}
   .verdict-chip .q{font-size:22px;font-weight:800;letter-spacing:-.4px;text-transform:capitalize;}
-  .verdict-chip .ql{font-size:10.5px;font-weight:600;opacity:.9;text-transform:uppercase;letter-spacing:.5px;}
+  .verdict-chip .ql{font-size:10.5px;font-weight:600;color:var(--faint);text-transform:uppercase;letter-spacing:.5px;}
+  .verdict-chip:has(.q-excellent),.verdict-chip:has(.q-good){background:color-mix(in srgb,var(--ok) 12%,var(--panel));border-color:color-mix(in srgb,var(--ok) 32%,var(--line));}
+  .verdict-chip:has(.q-fair){background:color-mix(in srgb,var(--warn) 12%,var(--panel));border-color:color-mix(in srgb,var(--warn) 32%,var(--line));}
+  .verdict-chip:has(.q-poor),.verdict-chip:has(.q-very_poor){background:color-mix(in srgb,var(--bad) 12%,var(--panel));border-color:color-mix(in srgb,var(--bad) 32%,var(--line));}
   .bars-wrap{display:flex;align-items:flex-end;gap:14px;}
   .bars{display:flex;align-items:flex-end;gap:6px;height:56px;}
   .bars i{width:12px;border-radius:4px 4px 2px 2px;background:var(--line);display:block;transition:background .3s,height .3s;}
