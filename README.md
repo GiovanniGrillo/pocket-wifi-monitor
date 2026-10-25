@@ -30,6 +30,10 @@ patterns.
 
 ![Analysis page](docs/analysis.jpg)
 
+**Data** — a sortable, filterable table of every recent sample, with CSV export.
+
+![Data explorer](docs/data.jpg)
+
 <sub>Screenshots use synthetic, anonymized data — no real carrier or cell is shown.</sub>
 
 ## What it does
@@ -58,8 +62,8 @@ phone_agent.py  ──  HTTP over Tailscale  ─▶  data/ + web dashboard
 - `agent/phone_agent.py` reads LTE, battery and connectivity, keeps a local
   outbox and retries samples whenever the PC is unreachable.
 - `collector/collector.py` ingests single samples or batches, de-duplicates the
-  historical view and serves `/`, `/stats`, `/data`, `/history`, `/recent` and
-  `/control` (remote stop and stress test).
+  historical view and serves the pages (`/`, `/stats`, `/explore`) and the APIs
+  `/data`, `/history`, `/recent` and `/control` (remote stop and stress test).
 - `agent/bands.py` holds only standard-library helpers for EARFCN, bands and
   quality classification.
 
@@ -73,19 +77,20 @@ tests/        synthetic tests
 docs/         PHONE.md (phone setup walkthrough)
 ```
 
-## The two pages
+## The three pages
 
-- **Overview** (`/`) — the live view: a sidebar app with four KPI cards
-  (signal, usable time, data reliability, speed), an interactive
-  signal-over-time chart, a quality-mix donut, the realtime signal/network/
-  device cards, remote controls and a paginated table of the most recent
-  samples.
+- **Overview** (`/`) — the live view: four KPI cards (signal, usable time, data
+  reliability, speed), an interactive signal-over-time chart, a quality-mix
+  donut, the realtime signal/network/device cards and the remote controls.
 - **Analysis** (`/stats`) — the verdict view: usage-profile recommendation,
   day-by-day and hour-of-day patterns, sensor uptime, conclusions, a dedicated
   4G/5G router upgrade estimate and a short glossary.
+- **Data** (`/explore`) — a sortable, filterable, paginated table of every
+  recent sample (time, operator, band, RSRP/RSRQ/SINR, HTTP, latency, battery)
+  with CSV export.
 
-Both pages are a single self-contained HTML file each (hand-rolled SVG charts,
-no chart libraries), bilingual **EN/IT** and with a light/dark theme toggle.
+Each page is a single self-contained HTML file (hand-rolled SVG charts, no chart
+libraries), bilingual **EN/IT** and with a light/dark theme toggle.
 
 ## Run the collector (PC)
 
