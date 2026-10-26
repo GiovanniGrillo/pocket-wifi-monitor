@@ -118,8 +118,8 @@
       <nav class="toggle" id="rangeSel" aria-label="range">
         <button data-d="1">24h</button><button data-d="7">7d</button><button data-d="30" class="on">30d</button><button data-d="365" id="t_all">all</button>
       </nav>
-      <button class="tbtn" id="themeBtn" title="Theme" aria-label="Theme">🌙</button>
-      <button class="tbtn" id="langBtn">EN</button>
+      <button class="tbtn" id="themeBtn" title="Theme" aria-label="Theme">dark</button>
+      <button class="tbtn" id="langBtn">IT</button>
     </header>
 
     <div class="toolbar">
@@ -172,7 +172,8 @@ const STLBL=()=>({all:L("all","tutti"),online:"online",nosignal:L("no signal","s
 
 function labels(){
   document.documentElement.lang=lang;
-  $("langBtn").textContent = lang==="it" ? "IT" : "EN";
+  $("langBtn").textContent = lang==="it" ? "EN" : "IT";
+  syncThemeBtn();
   $("t_title").textContent = L("Data","Dati");
   $("t_all").textContent = L("all","tutto");
   $("t_perpage").textContent = L("rows","righe");
@@ -269,7 +270,7 @@ $("scrim").addEventListener("click",closeNav);
 document.querySelectorAll(".side-link").forEach(a=>a.addEventListener("click",()=>{if(window.innerWidth<=900)closeNav();}));
 
 function curTheme(){return document.documentElement.dataset.theme||(matchMedia("(prefers-color-scheme:dark)").matches?"dark":"light");}
-function syncThemeBtn(){$("themeBtn").textContent=curTheme()==="dark"?"☀️":"🌙";}
+function syncThemeBtn(){$("themeBtn").textContent=curTheme()==="dark"?L("light","chiaro"):L("dark","scuro");}
 $("themeBtn").addEventListener("click",()=>{const t=curTheme()==="dark"?"light":"dark";document.documentElement.dataset.theme=t;try{localStorage.setItem("pw_theme",t);}catch(e){}syncThemeBtn();});
 syncThemeBtn();
 
