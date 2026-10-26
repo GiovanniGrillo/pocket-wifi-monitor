@@ -252,7 +252,7 @@ function sig(rsrp){
 
 function fillLabels(){
   document.documentElement.lang=lang;
-  $("langBtn").textContent=lang==="it"?"🌐 EN":"🌐 IT";
+  $("langBtn").textContent=lang==="it"?"EN":"IT";syncThemeBtn();
   $("t_title").textContent=L("Reception statistics","Statistiche presa rete");
   $("t_all").textContent=L("all","tutto");
   $("nav_overview").textContent=L("Overview","Panoramica");
@@ -313,7 +313,7 @@ function renderHour(h){
   if(!withData.length){$("hourChart").innerHTML=`<text x="400" y="75" fill="var(--faint)" font-size="13" text-anchor="middle">${L("no data yet","ancora nessun dato")}</text>`;$("hourCallout").textContent="";return;}
   const bw=(W-padL-padR)/24;let g="";
   for(let v=0;v<=100;v+=50){const yy=padT+(100-v)*(H-padT-padB)/100;g+=`<line x1="${padL}" y1="${yy}" x2="${W-padR}" y2="${yy}" stroke="var(--line)"/><text x="2" y="${yy+4}" fill="var(--faint)" font-size="9">${v}</text>`;}
-  bh.forEach((b,i)=>{if(b.ok_quality_pct==null)return;const val=b.ok_quality_pct,hh=(H-padT-padB)*val/100,c=val>=80?"var(--accent)":val>=50?"var(--warn)":"var(--bad)",xx=padL+i*bw;
+  bh.forEach((b,i)=>{if(b.ok_quality_pct==null)return;const val=b.ok_quality_pct,hh=(H-padT-padB)*val/100,c=val>=80?"var(--bar)":val>=50?"var(--warn)":"var(--bad)",xx=padL+i*bw;
     g+=`<rect x="${(xx+1).toFixed(1)}" y="${(H-padB-hh).toFixed(1)}" width="${Math.max(1,bw-2).toFixed(1)}" height="${hh.toFixed(1)}" fill="${c}"><title>${b.hour}:00 — ${val}%</title></rect>`;});
   for(let hh=0;hh<24;hh+=3){const xx=padL+hh*bw+bw/2;g+=`<text x="${xx.toFixed(1)}" y="${H-6}" fill="var(--faint)" font-size="9" text-anchor="middle">${hh}</text>`;}
   $("hourChart").innerHTML=g;
@@ -328,7 +328,7 @@ function renderByDay(h){
   const bd=h.by_day||[];
   if(!bd.length){$("dayStrip").innerHTML=`<span class="muted">${L("no data yet","ancora nessun dato")}</span>`;$("dayInfo").textContent="";$("daySvg").innerHTML="";return;}
   if(!selectedDay||!bd.some(d=>d.date===selectedDay)) selectedDay=bd[bd.length-1].date;
-  const qc=v=>v==null?"var(--line)":v>=80?"var(--accent)":v>=50?"var(--warn)":"var(--bad)";
+  const qc=v=>v==null?"var(--line)":v>=80?"var(--bar)":v>=50?"var(--warn)":"var(--bad)";
   $("dayStrip").innerHTML=bd.map(d=>{const[,m,dd]=d.date.split("-");
     return `<div class="daycell${d.date===selectedDay?' sel':''}" data-day="${d.date}"><div class="dq" style="background:${qc(d.ok_quality_pct)}"></div><div class="dd">${dd}/${m}</div><div class="dp">${d.ok_quality_pct==null?'—':d.ok_quality_pct+'%'}</div></div>`;}).join("");
   const sel=$("dayStrip").querySelector(".daycell.sel"); if(sel) sel.scrollIntoView({inline:"center",block:"nearest"});
@@ -342,7 +342,7 @@ function renderDayDetail(d){
     `<b>${dd}/${m}</b> · segnale ${sig(d.rsrp_median).w} (${d.rsrp_median??'—'} dBm) · usabile ${d.ok_quality_pct??'—'}% · dato ok ${d.uplink_ok_pct??'—'}% · ${d.n} campioni`);
   const W=800,H=130,padL=26,padR=8,padT=8,padB=20,bw=(W-padL-padR)/24;let g="";
   for(let v=0;v<=100;v+=50){const yy=padT+(100-v)*(H-padT-padB)/100;g+=`<line x1="${padL}" y1="${yy}" x2="${W-padR}" y2="${yy}" stroke="var(--line)"/><text x="2" y="${yy+4}" fill="var(--faint)" font-size="9">${v}</text>`;}
-  (d.hours||[]).forEach((val,i)=>{if(val==null)return;const hh=(H-padT-padB)*val/100,c=val>=80?"var(--accent)":val>=50?"var(--warn)":"var(--bad)",xx=padL+i*bw;
+  (d.hours||[]).forEach((val,i)=>{if(val==null)return;const hh=(H-padT-padB)*val/100,c=val>=80?"var(--bar)":val>=50?"var(--warn)":"var(--bad)",xx=padL+i*bw;
     g+=`<rect x="${(xx+1).toFixed(1)}" y="${(H-padB-hh).toFixed(1)}" width="${Math.max(1,bw-2).toFixed(1)}" height="${hh.toFixed(1)}" fill="${c}"><title>${i}:00 — ${val}%</title></rect>`;});
   for(let hh=0;hh<24;hh+=3){const xx=padL+hh*bw+bw/2;g+=`<text x="${xx.toFixed(1)}" y="${H-5}" fill="var(--faint)" font-size="9" text-anchor="middle">${hh}</text>`;}
   $("daySvg").innerHTML=g;
@@ -351,7 +351,7 @@ function renderCov(h){
   const s=h.series||[],W=800,H=80,padB=4;
   if(!s.length){$("covChart").innerHTML=`<text x="400" y="40" fill="var(--faint)" font-size="12" text-anchor="middle">${L("no data yet","ancora nessun dato")}</text>`;return;}
   const maxN=Math.max(...s.map(p=>p.n),1),bw=W/s.length;
-  $("covChart").innerHTML=s.map((p,i)=>{const hh=(H-padB)*p.n/maxN,c=p.ok_rate>=95?"var(--accent)":p.ok_rate>=50?"var(--warn)":"var(--bad)";return `<rect x="${(i*bw).toFixed(1)}" y="${(H-padB-hh).toFixed(1)}" width="${Math.max(1,bw-1).toFixed(1)}" height="${hh.toFixed(1)}" fill="${c}"/>`;}).join("");
+  $("covChart").innerHTML=s.map((p,i)=>{const hh=(H-padB)*p.n/maxN,c=p.ok_rate>=95?"var(--bar)":p.ok_rate>=50?"var(--warn)":"var(--bad)";return `<rect x="${(i*bw).toFixed(1)}" y="${(H-padB-hh).toFixed(1)}" width="${Math.max(1,bw-1).toFixed(1)}" height="${hh.toFixed(1)}" fill="${c}"/>`;}).join("");
 }
 
 const WORST=(...xs)=>{const o=["bad","borderline","good"];return xs.filter(Boolean).sort((a,b)=>o.indexOf(a)-o.indexOf(b))[0];};
@@ -450,7 +450,7 @@ async function load(){
 $("segDays").addEventListener("click",e=>{const b=e.target.closest("button");if(!b)return;days=parseInt(b.dataset.d,10);[...$("segDays").children].forEach(x=>x.classList.toggle("on",x===b));load();});
 $("langBtn").addEventListener("click",()=>{lang=lang==="it"?"en":"it";localStorage.setItem("pw_lang",lang);render();});
 function curTheme(){return document.documentElement.dataset.theme||(matchMedia("(prefers-color-scheme:dark)").matches?"dark":"light");}
-function syncThemeBtn(){$("themeBtn").textContent=curTheme()==="dark"?"☀️":"🌙";}
+function syncThemeBtn(){$("themeBtn").textContent=curTheme()==="dark"?L("light","chiaro"):L("dark","scuro");}
 $("themeBtn").addEventListener("click",()=>{const t=curTheme()==="dark"?"light":"dark";document.documentElement.dataset.theme=t;try{localStorage.setItem("pw_theme",t);}catch(e){}syncThemeBtn();});
 $("profile").addEventListener("change",e=>{profile=e.target.value;localStorage.setItem("pw_profile",profile);$("customWrap").style.display=profile==="custom"?"":"none";render();});
 $("customMbps").addEventListener("input",render);
