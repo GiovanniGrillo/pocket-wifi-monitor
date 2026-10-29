@@ -208,6 +208,29 @@ def _load_samples(days: int):
     return out
 
 
+def _seed_latest():
+    """After a restart, remember the last stored sample so the dashboard can
+    say how long ago the phone was last heard from instead of showing '—'."""
+    files = sorted(glob.glob(str(DATA_DIR / "remote_*.jsonl")))
+    for path in reversed(files):
+        try:
+            with open(path) as f:
+                lines = [ln for ln in f if ln.strip()]
+        except OSError:
+            continue
+        for line in reversed(lines):
+            try:
+                d = json.loads(line)
+            except ValueError:
+                continue
+            ts = _parse_ts(d.get("timestamp"))
+            if ts is None:
+                continue
+            _latest["ts"], _latest["fields"] = ts, d
+            _latest["source"] = str(d.get("source", "phone"))
+            return
+
+
 def _recent(n: int, days: int = 2) -> list:
     """The last `n` stored samples, newest first, compacted for the UI table."""
     rows = []
