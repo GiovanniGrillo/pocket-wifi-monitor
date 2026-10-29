@@ -51,7 +51,9 @@
   .side-link.active{color:var(--ink);background:var(--panel-2);box-shadow:inset 2px 0 0 var(--ink);}
   .side-link .ic{width:16px;text-align:center;opacity:.9;}
   .side-foot{margin-top:auto;display:flex;flex-direction:column;gap:8px;padding-top:12px;border-top:1px solid var(--line);}
-  .side-age{font-size:11.5px;color:var(--faint);font-weight:600;padding-left:4px;}
+  .side-age{font-size:11.5px;color:var(--faint);padding-left:16px;}
+  .side-foot .pill{border:0;background:none;padding:0 4px;font-size:12.5px;font-weight:600;gap:8px;}
+  .side-foot .pill.ok .dot{box-shadow:none;}
 
   .content{flex:1;min-width:0;padding:18px 28px 40px;}
 
@@ -215,7 +217,7 @@
     </nav>
     <div class="side-foot">
       <span class="pill" id="statusPill"><span class="dot"></span><span id="statusText">—</span></span>
-      <div class="side-age">⟳ <span id="c_age">—</span></div>
+      <div class="side-age" id="c_age">—</div>
     </div>
   </aside>
 
@@ -379,7 +381,7 @@ const T = {
       cap_signal:"median this period",cap_usable:"quality ≥ fair",cap_reliab:"HTTP 204 ok",cap_speed:"last stress test",cap_dataused:"estimate this period",
       page_of:(a,b,n)=>`${a}–${b} of ${n}`,
       banner:"<b>No SIM detected.</b> The dashboard is ready: signal, operator and cell will appear as soon as a SIM is inserted and the device registers.",
-      unreachable:"not reachable",device_off:"phone not connected or off",no_sim:"no SIM",connected:"connected",no_service:"no service",searching:"searching…",
+      unreachable:"offline",device_off:"phone not connected or off",no_sim:"no SIM",connected:"connected",no_service:"no service",searching:"searching…",
       pill_stopped:"stopped (overheat)",
       alarm_thermal:t=>`<b>Sensor stopped — overheating.</b> Battery ${t}°C ≥ 46 °C. Wake-lock released so the phone can sleep and cool; monitoring resumes only after a restart.`,
       alarm_stopped:"<b>Sensor stopped.</b> Remote stop command.",
