@@ -411,7 +411,7 @@ const T = {
       cap_signal:"mediano nel periodo",cap_usable:"qualità ≥ discreta",cap_reliab:"HTTP 204 ok",cap_speed:"ultimo stress test",cap_dataused:"stima nel periodo",
       page_of:(a,b,n)=>`${a}–${b} di ${n}`,
       banner:"<b>Nessuna SIM rilevata.</b> La dashboard è pronta: segnale, operatore e cella compariranno appena inserisci una SIM e il device si aggancia alla rete.",
-      unreachable:"non raggiungibile",device_off:"telefono non collegato o spento",no_sim:"nessuna SIM",connected:"connessa",no_service:"nessun servizio",searching:"ricerca…",
+      unreachable:"offline",device_off:"telefono non collegato o spento",no_sim:"nessuna SIM",connected:"connessa",no_service:"nessun servizio",searching:"ricerca…",
       pill_stopped:"fermo (surriscaldamento)",
       alarm_thermal:t=>`<b>Sensore fermato — surriscaldamento.</b> Batteria ${t}°C ≥ 46 °C. Wake-lock rilasciato per far dormire e raffreddare il telefono; riparte solo dopo un riavvio.`,
       alarm_stopped:"<b>Sensore fermato.</b> Comando di stop remoto.",
@@ -465,6 +465,7 @@ function renderAlert(f){
 function render(d){
   const f = (d && d.fields) || {};
   renderAlert(f);
+  $("c_age").textContent = (d && d.age_s!=null) ? L("last data ","ultimo dato ") + fmtDur(d.age_s) + L(" ago"," fa") : L("no data yet","nessun dato");
   if (!d || !d.reachable){
     setPill("bad", f.agent_status === "thermal_shutdown" ? tr().pill_stopped : tr().unreachable);
     $("sub").textContent = f.agent_status === "thermal_shutdown" ? tr().pill_stopped : tr().device_off;
@@ -519,7 +520,6 @@ function render(d){
   cLat.style.color = ms==null ? "" : (ms<150?"var(--ok)":ms<400?"var(--warn)":"var(--bad)");
   $("c_ok").textContent = f.http_ok===true ? tr().yes : (f.http_ok===false ? tr().no : "—");
   $("c_link").textContent = conn==="connected" ? tr().connected : (dash(conn) || "—");
-  $("c_age").textContent = (d.age_s!=null) ? (d.age_s<90 ? tr().ago_s(d.age_s) : tr().ago_m(Math.round(d.age_s/60))) : "—";
 
   const batt = dash(f.batt_pct) ?? dash(f.battery_percent);
   const plugged = f.batt_plugged || f.battery_charging === "1";
