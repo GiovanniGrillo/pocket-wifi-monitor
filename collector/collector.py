@@ -679,6 +679,7 @@ def main():
     OFFLINE_MIN = args.offline_min
 
     _load_control()
+    _seed_latest()
     if _control.get("stop"):
         print("NB: flag STOP attivo → il sensore si fermerà/resterà fermo. "
               "Per riattivarlo: dashboard 'Riprendi' o POST /control {\"stop\":false}.")
