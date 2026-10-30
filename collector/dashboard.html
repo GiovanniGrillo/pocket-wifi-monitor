@@ -213,7 +213,6 @@
       <a class="side-link active" href="#top"><span class="ic">▚</span><span data-i18n="nav_overview">Overview</span></a>
       <a class="side-link" href="/stats"><span class="ic">▤</span><span data-i18n="nav_analytics">Analytics</span></a>
       <a class="side-link" href="/explore"><span class="ic">▦</span><span data-i18n="nav_data">Data</span></a>
-      <a class="side-link" href="#settingsSection"><span class="ic">⚙</span><span data-i18n="nav_settings">Settings</span></a>
     </nav>
     <div class="side-foot">
       <span class="pill" id="statusPill"><span class="dot"></span><span id="statusText">—</span></span>
@@ -365,7 +364,7 @@ const dash = v => (v === undefined || v === null || v === "") ? null : v;
 
 let lang = localStorage.getItem("pw_lang") || "en";
 const T = {
-  en:{nav_overview:"Overview",nav_analytics:"Analytics",nav_data:"Data",nav_settings:"Settings",range_all:"all",
+  en:{nav_overview:"Overview",nav_analytics:"Analytics",nav_data:"Data",range_all:"all",
       pause:"Pause",resume:"Resume",signal:"Signal",
       card_network:"Network",k_operator:"Operator",k_plmn:"Code (MCC/MNC)",k_tech:"Technology",k_status:"Status",
       card_conn:"Connectivity (data)",u_http:"HTTP response",u_lat:"latency",k_dataok:"Data works",k_link:"Link state",
@@ -395,7 +394,7 @@ const T = {
       q:{excellent:"excellent",good:"good",fair:"fair",poor:"poor",very_poor:"very poor"},
       sim:{ready:"ready",valid:"valid",absent:"absent"},
       sv:{good:"good",borderline:"borderline",bad:"weak"}},
-  it:{nav_overview:"Panoramica",nav_analytics:"Analisi",nav_data:"Dati",nav_settings:"Impostazioni",range_all:"tutto",
+  it:{nav_overview:"Panoramica",nav_analytics:"Analisi",nav_data:"Dati",range_all:"tutto",
       pause:"Pausa",resume:"Riprendi",signal:"Segnale",
       card_network:"Rete",k_operator:"Operatore",k_plmn:"Codice (MCC/MNC)",k_tech:"Tecnologia",k_status:"Stato",
       card_conn:"Connettività (dato)",u_http:"risposta HTTP",u_lat:"latenza",k_dataok:"Il dato passa",k_link:"Stato link",
