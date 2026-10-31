@@ -42,7 +42,11 @@
   .side-link:hover{color:var(--ink);background:var(--fill);}
   .side-link.active{color:var(--ink);background:var(--fill);box-shadow:inset 2px 0 0 var(--ink);}
   .side-link .ic{width:15px;text-align:center;opacity:.8;font-size:12px;}
-  .side-foot{margin-top:auto;padding-top:14px;border-top:1px solid var(--line);font-size:11px;color:var(--faint);}
+  .side-foot{margin-top:auto;display:flex;flex-direction:column;gap:8px;padding-top:14px;border-top:1px solid var(--line);font-size:11px;color:var(--faint);}
+  .side-status{display:inline-flex;align-items:center;gap:8px;padding:0 4px;font-size:12.5px;font-weight:600;color:var(--bad);}
+  .side-status.online{color:var(--ok);}
+  .side-status .dot{width:7px;height:7px;border-radius:50%;background:currentColor;}
+  .side-age{padding-left:16px;}
 
   .content{flex:1;min-width:0;padding:22px 32px 48px;}
   .topbar{display:flex;align-items:flex-end;gap:16px;flex-wrap:wrap;margin-bottom:22px;}
@@ -104,7 +108,10 @@
       <a class="side-link" href="/stats"><span class="ic">▤</span><span id="nav_analytics">Analytics</span></a>
       <a class="side-link active" href="/explore"><span class="ic">▦</span><span id="nav_data">Data</span></a>
     </nav>
-    <div class="side-foot"><span id="foot">—</span></div>
+    <div class="side-foot">
+      <span class="side-status" id="statusPill"><span class="dot"></span><span id="statusText">offline</span></span>
+      <span class="side-age" id="foot">—</span>
+    </div>
   </aside>
 
   <main class="content">
@@ -226,6 +233,20 @@ function render(){
   $("prev").disabled = page<=0; $("next").disabled = page>=pages-1;
 }
 
+function setCollectorStatus(online){
+  $("statusPill").classList.toggle("online",online);
+  $("statusText").textContent=online?L("online","online"):L("offline","offline");
+}
+
+async function loadCollectorStatus(){
+  try{
+    const headers={}; const tok=localStorage.getItem("pw_token"); if(tok) headers["X-Token"]=tok;
+    const r=await fetch("/data",{cache:"no-store",headers});
+    if(!r.ok) throw new Error("status request failed");
+    setCollectorStatus(!!(await r.json()).reachable);
+  }catch(e){ setCollectorStatus(false); }
+}
+
 async function load(){
   try{
     const headers={}; const tok=localStorage.getItem("pw_token"); if(tok) headers["X-Token"]=tok;
@@ -273,7 +294,7 @@ function syncThemeBtn(){$("themeBtn").textContent=curTheme()==="dark"?L("light",
 $("themeBtn").addEventListener("click",()=>{const t=curTheme()==="dark"?"light":"dark";document.documentElement.dataset.theme=t;try{localStorage.setItem("pw_theme",t);}catch(e){}syncThemeBtn();});
 syncThemeBtn();
 
-labels(); load(); setInterval(load,60000);
+labels(); load(); loadCollectorStatus(); setInterval(load,60000); setInterval(loadCollectorStatus,10000);
 </script>
 </body>
 </html>
