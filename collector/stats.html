@@ -21,6 +21,7 @@
     --bg:#f1f0ec;--panel:#ffffff;--panel-2:#f6f5f1;--line:#e4e2db;--line-soft:#ece9e1;--line-strong:#d6d3ca;
     --txt:#1b1a17;--dim:#6a6760;--faint:#9c978c;
     --ink-pill:#1b1a17;--pill-ink:#f1f0ec;--bar:#cfcbc0;
+    --ink:var(--txt);--ok:var(--accent);  /* aliases shared with the other pages */
   }
   @media (prefers-color-scheme:dark){
     :root:not([data-theme="light"]){--bg:#141310;--panel:#1b1a16;--panel-2:#201e19;--line:#2d2b25;--line-soft:#242219;--line-strong:#3a382f;--txt:#ece9e1;--dim:#9c978c;--faint:#6a6760;--accent:#6aa77f;--warn:#d2a24e;--bad:#cf6f67;--ink-pill:#ece9e1;--pill-ink:#141310;--bar:#4a473f;}
@@ -63,7 +64,11 @@
   .side-link:hover{color:var(--txt);background:var(--panel-2);}
   .side-link.active{color:var(--txt);background:var(--panel-2);box-shadow:inset 2px 0 0 var(--txt);}
   .side-link .ic{width:15px;text-align:center;opacity:.8;font-size:12px;}
-  .side-foot{margin-top:auto;padding-top:12px;border-top:1px solid var(--line);font-size:11px;color:var(--faint);}
+  .side-foot{margin-top:auto;display:flex;flex-direction:column;gap:8px;padding-top:12px;border-top:1px solid var(--line);font-size:11px;color:var(--faint);}
+  .side-status{display:inline-flex;align-items:center;gap:8px;padding:0 4px;font-size:12.5px;font-weight:600;color:var(--bad);}
+  .side-status.online{color:var(--ok);}
+  .side-status .dot{width:7px;height:7px;border-radius:50%;background:currentColor;}
+  .side-age{padding-left:16px;}
   .content{flex:1;min-width:0;padding:16px 28px 40px;}
   .topbar{display:flex;align-items:center;gap:14px;flex-wrap:wrap;position:sticky;top:0;z-index:20;padding:10px 0 14px;margin-bottom:8px;background:color-mix(in srgb,var(--bg) 86%,transparent);backdrop-filter:blur(8px);}
   .tb-title .page-title{font-size:26px;} .tb-actions{display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
@@ -144,7 +149,10 @@
       <a class="side-link active" href="/stats"><span class="ic">▤</span><span id="nav_analytics">Analytics</span></a>
       <a class="side-link" href="/explore"><span class="ic">▦</span><span id="nav_data">Data</span></a>
     </nav>
-    <div class="side-foot"><span id="foot">—</span></div>
+    <div class="side-foot">
+      <span class="side-status" id="statusPill"><span class="dot"></span><span id="statusText">offline</span></span>
+      <span class="side-age" id="foot">—</span>
+    </div>
   </aside>
 
   <main class="content" id="top">
@@ -436,6 +444,20 @@ function render(){
   renderMeter(h);renderKpis(h);renderByDay(h);renderHour(h);renderCov(h);renderPotential(h);
 }
 
+function setCollectorStatus(online){
+  $("statusPill").classList.toggle("online",online);
+  $("statusText").textContent=online?L("online","online"):L("offline","offline");
+}
+
+async function loadCollectorStatus(){
+  try{
+    const headers={};const tok=localStorage.getItem("pw_token");if(tok)headers["X-Token"]=tok;
+    const r=await fetch("/data",{cache:"no-store",headers});
+    if(!r.ok)throw new Error("status request failed");
+    setCollectorStatus(!!(await r.json()).reachable);
+  }catch(e){setCollectorStatus(false);}
+}
+
 async function load(){
   try{
     const headers={};const tok=localStorage.getItem("pw_token");if(tok)headers["X-Token"]=tok;
@@ -460,7 +482,7 @@ $("menuBtn").addEventListener("click",()=>$("app").classList.toggle("nav-open"))
 $("scrim").addEventListener("click",closeNav);
 document.querySelectorAll(".side-link").forEach(a=>a.addEventListener("click",()=>{if(window.innerWidth<=900)closeNav();}));
 
-fillLabels();syncThemeBtn();load();setInterval(load,60000);
+fillLabels();syncThemeBtn();load();loadCollectorStatus();setInterval(load,60000);setInterval(loadCollectorStatus,10000);
 </script>
 </body>
 </html>
