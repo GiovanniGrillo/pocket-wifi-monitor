@@ -122,9 +122,6 @@
         <p class="sub" id="sub">loading…</p>
       </div>
       <div class="spacer"></div>
-      <nav class="toggle" id="rangeSel" aria-label="range">
-        <button data-d="1">24h</button><button data-d="7">7d</button><button data-d="30" class="on">30d</button><button data-d="365" id="t_all">all</button>
-      </nav>
       <button class="tbtn" id="themeBtn" title="Theme" aria-label="Theme">dark</button>
       <button class="tbtn" id="langBtn">IT</button>
     </header>
@@ -182,7 +179,6 @@ function labels(){
   $("langBtn").textContent = lang==="it" ? "EN" : "IT";
   syncThemeBtn();
   $("t_title").textContent = L("Data","Dati");
-  $("t_all").textContent = L("all","tutto");
   $("t_perpage").textContent = L("rows","righe");
   $("nav_overview").textContent=L("Overview","Panoramica");
   $("nav_analytics").textContent=L("Analytics","Analisi");
@@ -276,7 +272,6 @@ $("csvBtn").addEventListener("click",()=>{
   setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove();},0);
 });
 
-$("rangeSel").addEventListener("click",e=>{const b=e.target.closest("button");if(!b)return;days=parseInt(b.dataset.d,10);[...$("rangeSel").children].forEach(x=>x.classList.toggle("on",x===b));page=0;load();});
 $("statusSel").addEventListener("click",e=>{const b=e.target.closest("button");if(!b)return;statusF=b.dataset.s;[...$("statusSel").children].forEach(x=>x.classList.toggle("on",x===b));page=0;render();});
 $("headRow").addEventListener("click",e=>{const th=e.target.closest("th");if(!th)return;const k=th.dataset.k;if(k===sortKey)sortDir*=-1;else{sortKey=k;sortDir=(k==="t")?-1:1;}labels();render();});
 $("perPage").addEventListener("change",e=>{perPage=parseInt(e.target.value,10)||50;page=0;render();});
