@@ -78,7 +78,17 @@
   button.ghost{font:inherit;font-size:12.5px;font-weight:600;color:var(--dim);background:none;border:0;padding:3px 4px;cursor:pointer;transition:color .15s;}
   button.ghost:hover{color:var(--txt);}
   .iconbtn{display:none;font:inherit;font-size:18px;line-height:1;background:none;border:1px solid var(--line);border-radius:8px;color:var(--txt);width:36px;height:36px;cursor:pointer;}
-  select.filter{font:inherit;font-size:12px;font-weight:600;color:var(--dim);background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:6px 10px;cursor:pointer;}
+  .profile-menu{position:relative;}
+  .profile-trigger{font:inherit;font-size:12px;font-weight:600;color:var(--dim);background:transparent;border:0;border-bottom:1px solid var(--line-strong);padding:5px 18px 5px 0;cursor:pointer;transition:color .15s,border-color .15s;}
+  .profile-trigger:hover,.profile-menu.open .profile-trigger{color:var(--ink);border-color:var(--ink);}
+  .profile-trigger::after{content:"";position:absolute;right:3px;top:10px;width:5px;height:5px;border-right:1px solid currentColor;border-bottom:1px solid currentColor;transform:rotate(45deg);transition:transform .15s;}
+  .profile-menu.open .profile-trigger::after{transform:rotate(225deg) translate(-1px,-1px);}
+  .profile-options{display:none;position:absolute;right:0;top:calc(100% + 8px);min-width:190px;padding:5px;background:var(--panel);border:1px solid var(--line);box-shadow:var(--shadow);z-index:30;}
+  .profile-menu.open .profile-options{display:grid;}
+  .profile-option{font:inherit;font-size:12px;font-weight:600;text-align:left;color:var(--dim);background:transparent;border:0;padding:8px 9px;cursor:pointer;}
+  .profile-option:hover,.profile-option[aria-selected="true"]{color:var(--ink);background:var(--panel-2);}
+  .profile-option[aria-selected="true"]{font-weight:700;}
+  .profile-trigger:focus-visible,.profile-option:focus-visible{outline-offset:3px;}
   .scrim{display:none;position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:40;}
   @media (max-width:900px){
     .sidebar{position:fixed;left:0;top:0;z-index:50;transform:translateX(-100%);transition:transform .2s;box-shadow:var(--shadow);}
@@ -167,7 +177,10 @@
       </div>
       <div class="spacer"></div>
       <div class="tb-actions">
-        <select class="filter" id="profile"></select>
+        <div class="profile-menu" id="profileMenu">
+          <button class="profile-trigger" id="profileButton" type="button" aria-haspopup="listbox" aria-expanded="false" aria-label="Usage profile"></button>
+          <div class="profile-options" id="profileOptions" role="listbox" aria-label="Usage profile options"></div>
+        </div>
         <span id="customWrap" style="display:none"><input type="number" id="customMbps" min="1" max="1000" value="10"> <span class="muted" id="t_target">target Mbps</span></span>
         <button class="ghost" id="themeBtn" title="Theme" aria-label="Theme">dark</button>
         <button class="ghost" id="langBtn">IT</button>
@@ -292,7 +305,9 @@ function fillLabels(){
   $("h_pot").textContent=L("The phone measures this spot's radio environment; a router with external antennas/CA can do better — but is bounded by the same coverage. Rough estimate, not a promise.","Il telefono misura l'ambiente radio del posto; un router con antenne esterne/CA può fare meglio — ma è vincolato alla stessa copertura. Stima indicativa, non una promessa.");
   $("t_gloss").textContent=L("Quick glossary","Glossario rapido");
   $("foot").textContent=L("updates every 60 s","aggiorna ogni 60 s");
-  const sel=$("profile");sel.innerHTML=Object.keys(PROFILES).map(id=>`<option value="${id}">${profName(id)}</option>`).join("");sel.value=profile;
+  const profileButton=$("profileButton"),profileOptions=$("profileOptions");
+  profileButton.textContent=profName(profile);
+  profileOptions.innerHTML=Object.keys(PROFILES).map(id=>`<button class="profile-option" type="button" role="option" data-profile="${id}" aria-selected="${id===profile}">${profName(id)}</button>`).join("");
   $("customWrap").style.display=profile==="custom"?"":"none";
   $("gloss").innerHTML=[
     ["RSRP",L("signal power. Above −100 dBm is fine, below −110 is critical.","potenza del segnale. Sopra −100 dBm va bene, sotto −110 è critico.")],
@@ -484,7 +499,25 @@ $("langBtn").addEventListener("click",()=>{lang=lang==="it"?"en":"it";localStora
 function curTheme(){return document.documentElement.dataset.theme||(matchMedia("(prefers-color-scheme:dark)").matches?"dark":"light");}
 function syncThemeBtn(){$("themeBtn").textContent=curTheme()==="dark"?L("light","chiaro"):L("dark","scuro");}
 $("themeBtn").addEventListener("click",()=>{const t=curTheme()==="dark"?"light":"dark";document.documentElement.dataset.theme=t;try{localStorage.setItem("pw_theme",t);}catch(e){}syncThemeBtn();});
-$("profile").addEventListener("change",e=>{profile=e.target.value;localStorage.setItem("pw_profile",profile);$("customWrap").style.display=profile==="custom"?"":"none";render();});
+function closeProfileMenu(){
+  $("profileMenu").classList.remove("open");
+  $("profileButton").setAttribute("aria-expanded","false");
+}
+$("profileButton").addEventListener("click",()=>{
+  const menu=$("profileMenu"),open=menu.classList.toggle("open");
+  $("profileButton").setAttribute("aria-expanded",String(open));
+});
+$("profileOptions").addEventListener("click",e=>{
+  const option=e.target.closest(".profile-option");if(!option)return;
+  profile=option.dataset.profile;localStorage.setItem("pw_profile",profile);
+  closeProfileMenu();render();
+});
+document.addEventListener("click",e=>{
+  if(!e.target.closest("#profileMenu"))closeProfileMenu();
+});
+document.addEventListener("keydown",e=>{
+  if(e.key==="Escape")closeProfileMenu();
+});
 $("customMbps").addEventListener("input",render);
 $("dayStrip").addEventListener("click",e=>{const c=e.target.closest(".daycell");if(!c||!last)return;selectedDay=c.dataset.day;renderByDay(last);});
 $("segDays").addEventListener("click",e=>{
