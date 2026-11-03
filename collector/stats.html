@@ -308,7 +308,6 @@ function fillLabels(){
   $("t_pot").textContent=L("Upgrade potential — dedicated 4G/5G router","Potenziale upgrade — router 4G/5G dedicato");
   $("h_pot").textContent=L("The phone measures this spot's radio environment; a router with external antennas/CA can do better — but is bounded by the same coverage. Rough estimate, not a promise.","Il telefono misura l'ambiente radio del posto; un router con antenne esterne/CA può fare meglio — ma è vincolato alla stessa copertura. Stima indicativa, non una promessa.");
   $("t_gloss").textContent=L("Quick glossary","Glossario rapido");
-  $("foot").textContent=L("updates every 60 s","aggiorna ogni 60 s");
   const profileButton=$("profileButton"),profileOptions=$("profileOptions");
   profileButton.textContent=profName(profile);
   profileOptions.innerHTML=Object.keys(PROFILES).map(id=>`<button class="profile-option" type="button" role="option" data-profile="${id}" aria-selected="${id===profile}">${profName(id)}</button>`).join("");
@@ -476,9 +475,18 @@ function render(){
   renderMeter(h);renderKpis(h);renderByDay(h);renderHour(h);renderCov(h);renderPotential(h);
 }
 
-function setCollectorStatus(online){
+function setCollectorStatus(online,age){
   $("statusPill").classList.toggle("online",online);
   $("statusText").textContent=online?L("online","online"):L("offline","offline");
+  $("foot").textContent=age!=null?L("last data ","ultimo dato ")+fmtAge(age)+L(" ago"," fa"):L("no data yet","nessun dato");
+}
+
+function fmtAge(s){
+  s=Math.max(0,s|0);
+  const d=Math.floor(s/86400),h=Math.floor(s%86400/3600),m=Math.floor(s%3600/60);
+  if(d>0)return `${d}${L("d","g")} ${h}h`;
+  if(h>0)return `${h}h ${m}m`;
+  return m>0?`${m}m`:`${s}s`;
 }
 
 async function loadCollectorStatus(){
@@ -486,7 +494,7 @@ async function loadCollectorStatus(){
     const headers={};const tok=localStorage.getItem("pw_token");if(tok)headers["X-Token"]=tok;
     const r=await fetch("/data",{cache:"no-store",headers});
     if(!r.ok)throw new Error("status request failed");
-    setCollectorStatus(!!(await r.json()).reachable);
+    const d=await r.json();setCollectorStatus(!!d.reachable,d.age_s);
   }catch(e){setCollectorStatus(false);}
 }
 
