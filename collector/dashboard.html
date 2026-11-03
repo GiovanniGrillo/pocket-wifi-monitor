@@ -98,7 +98,7 @@
 
   /* ---- KPI row ---- */
   .kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:16px;}
-  .kpi{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);padding:15px 17px;}
+  .kpi{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);padding:18px 20px;}
   .kpi-top{display:flex;align-items:center;justify-content:space-between;gap:8px;}
   .kpi-l{font-size:11px;font-weight:600;color:var(--faint);text-transform:uppercase;letter-spacing:.5px;}
   .kpi-v{font-size:27px;font-weight:800;letter-spacing:-.8px;margin-top:7px;}
@@ -113,6 +113,7 @@
   .card{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);padding:18px 20px;}
   .c-3{grid-column:span 3;} .c-4{grid-column:span 4;} .c-5{grid-column:span 5;}
   .c-6{grid-column:span 6;} .c-7{grid-column:span 7;} .c-8{grid-column:span 8;} .c-12{grid-column:span 12;}
+  @media (max-width:1200px){.c-3{grid-column:span 6;}}
   @media (max-width:980px){.c-3,.c-4,.c-5,.c-6,.c-7,.c-8{grid-column:span 12;}}
   .card h2{margin:0;font-size:15px;font-weight:700;letter-spacing:-.2px;}
   .card-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:14px;}
@@ -127,8 +128,8 @@
   .v.muted{color:var(--faint);font-weight:500;}
 
   /* signal hero */
-  .sig-top{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;margin-bottom:16px;}
-  .verdict-chip{display:inline-flex;flex-direction:column;gap:4px;padding:14px 18px;border-radius:14px;min-width:150px;
+  .sig-top{display:flex;align-items:flex-end;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:12px;}
+  .verdict-chip{display:inline-flex;flex-direction:column;gap:4px;padding:10px 14px;border-radius:var(--radius-sm);min-width:0;
     background:var(--panel-2);border:1px solid var(--line);transition:background .2s,border-color .2s;}
   .verdict-chip .q{font-size:22px;font-weight:800;letter-spacing:-.4px;text-transform:capitalize;}
   .verdict-chip .ql{font-size:10.5px;font-weight:600;color:var(--faint);text-transform:uppercase;letter-spacing:.5px;}
@@ -136,10 +137,10 @@
   .verdict-chip:has(.q-fair){background:color-mix(in srgb,var(--warn) 12%,var(--panel));border-color:color-mix(in srgb,var(--warn) 32%,var(--line));}
   .verdict-chip:has(.q-poor),.verdict-chip:has(.q-very_poor){background:color-mix(in srgb,var(--bad) 12%,var(--panel));border-color:color-mix(in srgb,var(--bad) 32%,var(--line));}
   .bars-wrap{display:flex;align-items:flex-end;gap:14px;}
-  .bars{display:flex;align-items:flex-end;gap:6px;height:56px;}
-  .bars i{width:12px;border-radius:4px 4px 2px 2px;background:var(--line);display:block;transition:background .3s,height .3s;}
-  .bars i.on{background:linear-gradient(180deg,var(--green),#15a34a);}
-  .bars-n{font-size:30px;font-weight:800;letter-spacing:-1px;}
+  .bars{display:flex;align-items:flex-end;gap:5px;height:40px;}
+  .bars i{width:9px;border-radius:4px 4px 2px 2px;background:var(--line);display:block;transition:background .3s,height .3s;}
+  .bars i.on{background:var(--ink);}
+  .bars-n{font-size:26px;font-weight:800;letter-spacing:-1px;}
   .bars-n small{font-size:14px;color:var(--faint);font-weight:600;}
 
   .stat2{display:flex;gap:26px;margin-bottom:14px;}
@@ -154,6 +155,8 @@
   .q{display:inline;} .q.q-excellent,.q.q-good{color:var(--ok);} .q.q-fair{color:var(--warn);} .q.q-poor,.q.q-very_poor,.q.q-none{color:var(--bad);}
   .q-none{color:var(--faint);}
   .btn-wide{margin-top:14px;width:100%;justify-content:center;}
+  .settings-cols{display:grid;grid-template-columns:1fr 1fr;gap:0 40px;align-items:start;}
+  @media (max-width:980px){.settings-cols{grid-template-columns:1fr;}}
   .ctrl-area{display:flex;flex-direction:column;gap:10px;margin-bottom:14px;padding-bottom:14px;border-bottom:1px solid var(--line);}
 
   /* charts */
@@ -287,7 +290,7 @@
 
     <!-- realtime detail cards -->
     <div class="grid">
-      <section class="card c-8">
+      <section class="card c-3">
         <div class="card-head"><h2 data-i18n="signal">Signal</h2></div>
         <div class="sig-top">
           <div class="verdict-chip"><span class="q q-none" id="f_quality">—</span><span class="ql" id="f_quality_lbl"></span></div>
@@ -299,7 +302,7 @@
         <div class="rows" id="sigRows"></div>
       </section>
 
-      <section class="card c-4">
+      <section class="card c-3">
         <div class="card-head"><h2 data-i18n="card_network">Network</h2></div>
         <div class="rows">
           <div class="row"><span class="k" data-i18n="k_operator">Operator</span><span class="v" id="f_operator">—</span></div>
