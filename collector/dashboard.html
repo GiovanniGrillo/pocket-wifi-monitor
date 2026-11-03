@@ -312,17 +312,17 @@
         </div>
       </section>
 
-      <section class="card c-4">
+      <section class="card c-3">
         <div class="card-head"><h2 data-i18n="card_conn">Connectivity (data)</h2></div>
         <div class="stat2">
           <div><div class="big" id="c_http">—</div><div class="u" data-i18n="u_http">HTTP response</div></div>
           <div><div class="big" id="c_lat">—</div><div class="u" data-i18n="u_lat">latency</div></div>
         </div>
         <div class="catline"><span class="cl-k" data-i18n="k_dataok">Data works</span><span class="cl-v" id="c_ok" style="color:var(--green)">—</span></div>
-        <div class="catline"><span class="cl-k" data-i18n="k_link">Link state</span><span class="cl-v" id="c_link" style="color:var(--blue)">—</span></div>
+        <div class="catline"><span class="cl-k" data-i18n="k_link">Link state</span><span class="cl-v" id="c_link">—</span></div>
       </section>
 
-      <section class="card c-4">
+      <section class="card c-3">
         <div class="card-head"><h2 data-i18n="card_device">Device</h2></div>
         <div class="rows">
           <div class="row"><span class="k" data-i18n="k_batt">Battery</span><span class="v" id="f_batt">—</span></div>
@@ -333,18 +333,24 @@
       </section>
 
       <!-- Settings / sensor controls + stress test -->
-      <section class="card c-8" id="settingsSection">
+      <section class="card c-12" id="settingsSection">
         <div class="card-head"><h2 data-i18n="card_settings">Settings &amp; stress test</h2></div>
+        <div class="settings-cols">
+        <div>
         <div class="ctrl-area">
           <div class="catline" style="padding-top:0"><span class="cl-k" data-i18n="k_sensor">Remote sensor</span><button class="ghost" id="ctrlBtn">⏹ Stop</button></div>
         </div>
         <div class="hero-num" id="st_mbps">—</div>
         <div style="margin:4px 0 12px"><span class="q q-none" id="st_verdict" style="font-weight:700">—</span> <span class="u" id="st_verdict_lbl" style="color:var(--faint);font-size:11.5px"></span></div>
+        </div>
+        <div>
         <div class="catline"><span class="cl-k" data-i18n="k_latload">Latency idle→load</span><span class="cl-v v" id="st_lat">—</span></div>
         <div class="catline"><span class="cl-k" data-i18n="k_dataused">Data used</span><span class="cl-v v" id="st_data">—</span></div>
         <div class="catline"><span class="cl-k" data-i18n="k_when">When</span><span class="cl-v v" id="st_when">—</span></div>
         <button class="ghost btn-wide" id="stressBtn">▶ Run stress test</button>
         <div id="st_status" style="font-size:11px;color:var(--faint);margin-top:8px;min-height:14px"></div>
+        </div>
+        </div>
       </section>
     </div>
 
