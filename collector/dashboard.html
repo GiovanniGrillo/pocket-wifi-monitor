@@ -129,13 +129,9 @@
 
   /* signal hero */
   .sig-top{display:flex;align-items:flex-end;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:12px;}
-  .verdict-chip{display:inline-flex;flex-direction:column;gap:4px;padding:10px 14px;border-radius:var(--radius-sm);min-width:0;
-    background:var(--panel-2);border:1px solid var(--line);transition:background .2s,border-color .2s;}
-  .verdict-chip .q{font-size:22px;font-weight:800;letter-spacing:-.4px;text-transform:capitalize;}
-  .verdict-chip .ql{font-size:10.5px;font-weight:600;color:var(--faint);text-transform:uppercase;letter-spacing:.5px;}
-  .verdict-chip:has(.q-excellent),.verdict-chip:has(.q-good){background:color-mix(in srgb,var(--ok) 12%,var(--panel));border-color:color-mix(in srgb,var(--ok) 32%,var(--line));}
-  .verdict-chip:has(.q-fair){background:color-mix(in srgb,var(--warn) 12%,var(--panel));border-color:color-mix(in srgb,var(--warn) 32%,var(--line));}
-  .verdict-chip:has(.q-poor),.verdict-chip:has(.q-very_poor){background:color-mix(in srgb,var(--bad) 12%,var(--panel));border-color:color-mix(in srgb,var(--bad) 32%,var(--line));}
+  .verdict-chip{display:flex;flex-direction:column;gap:2px;min-width:0;}
+  .verdict-chip .q{font-size:26px;font-weight:800;letter-spacing:-.6px;line-height:1.1;text-transform:capitalize;}
+  .verdict-chip .ql{font-size:11px;font-weight:500;color:var(--faint);}
   .bars-wrap{display:flex;align-items:flex-end;gap:14px;}
   .bars{display:flex;align-items:flex-end;gap:5px;height:40px;}
   .bars i{width:9px;border-radius:4px 4px 2px 2px;background:var(--line);display:block;transition:background .3s,height .3s;}
