@@ -92,7 +92,7 @@
 
   /* ---- banners ---- */
   .banner{display:none;align-items:center;gap:11px;margin-bottom:14px;background:color-mix(in srgb,var(--warn) 8%,var(--panel));border:1px solid color-mix(in srgb,var(--warn) 30%,var(--line));border-left:3px solid var(--warn);border-radius:var(--radius-sm);padding:12px 15px;font-size:12.5px;}
-  .banner.show{display:flex;} .banner b{color:var(--warn);font-weight:700;}
+  .banner.show{display:flex;} .banner > div{flex:1;min-width:0;overflow-wrap:anywhere;} .banner b{color:var(--warn);font-weight:700;}
   .banner.alarm{background:color-mix(in srgb,var(--bad) 8%,var(--panel));border-color:color-mix(in srgb,var(--bad) 30%,var(--line));border-left-color:var(--bad);} .banner.alarm b{color:var(--bad);}
   .banner svg{flex:none;color:var(--warn);}
 
@@ -153,7 +153,6 @@
   .btn-wide{margin-top:14px;width:100%;justify-content:center;}
   .settings-cols{display:grid;grid-template-columns:1fr 1fr;gap:0 40px;align-items:start;}
   @media (max-width:980px){.settings-cols{grid-template-columns:1fr;}}
-  .ctrl-area{display:flex;flex-direction:column;gap:10px;margin-bottom:14px;padding-bottom:14px;border-bottom:1px solid var(--line);}
 
   /* charts */
   svg{display:block;width:100%;height:auto;}
@@ -243,7 +242,7 @@
       <div class="tb-actions">
         <button class="ghost" id="themeBtn" title="Theme" aria-label="Theme">dark</button>
         <button class="ghost" id="langBtn">IT</button>
-        <button class="ghost" id="pauseBtn" data-i18n="pause">Pause</button>
+        <button class="ghost" id="ctrlBtn">Stop sensor</button>
       </div>
     </header>
 
@@ -330,12 +329,9 @@
 
       <!-- Settings / sensor controls + stress test -->
       <section class="card c-12" id="settingsSection">
-        <div class="card-head"><h2 data-i18n="card_settings">Settings &amp; stress test</h2></div>
+        <div class="card-head"><h2 data-i18n="card_settings">Stress test</h2></div>
         <div class="settings-cols">
         <div>
-        <div class="ctrl-area">
-          <div class="catline" style="padding-top:0"><span class="cl-k" data-i18n="k_sensor">Remote sensor</span><button class="ghost" id="ctrlBtn">⏹ Stop</button></div>
-        </div>
         <div class="hero-num" id="st_mbps">—</div>
         <div style="margin:4px 0 12px"><span class="q q-none" id="st_verdict" style="font-weight:700">—</span> <span class="u" id="st_verdict_lbl" style="color:var(--faint);font-size:11.5px"></span></div>
         </div>
