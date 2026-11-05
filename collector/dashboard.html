@@ -390,7 +390,7 @@ const T = {
       card_network:"Network",k_operator:"Operator",k_plmn:"Code (MCC/MNC)",k_tech:"Technology",k_status:"Status",
       card_conn:"Connectivity (data)",u_http:"HTTP response",u_lat:"latency",k_dataok:"Data works",k_link:"Link state",
       card_device:"Device",k_batt:"Battery",k_temp:"Temperature",k_sim:"SIM",k_uptime:"Agent uptime",
-      card_settings:"Settings & stress test",k_sensor:"Remote sensor",k_latload:"Latency idle→load",k_dataused:"Data used",k_when:"When",
+      card_settings:"Stress test",k_sensor:"Remote sensor",k_latload:"Latency idle→load",k_dataused:"Data used",k_when:"When",
       chart_title:"Signal over time",chart_hint:"Median signal per bucket. Hover the line for exact values.",
       mix_title:"Quality mix",mix_hint:"Share of time at each level.",mix_center:"usable",
       tbl_title:"Recent samples",tbl_hint:"Latest readings from the phone.",
@@ -408,7 +408,7 @@ const T = {
       warn_hot:t=>`<b>High temperature:</b> ${t}°C — still monitoring; it will stop if it keeps rising.`,
       qlbl:"LTE quality (RSRP/SINR)",qnone:"no reading",no_sig:"no signal data",yes:"yes",no:"no",updating:"updating every 3 s",paused:"paused",
       chart_nosig:"signal not reported (screen-off)",daily_median:"daily median",hourly_median:"hourly median",
-      stop:"⏹ Stop sensor",resume_sensor:"▶ Resume sensor",run_stress:"▶ Run stress test",running:"⏳ running…",
+      stop:"Stop sensor",resume_sensor:"Resume sensor",run_stress:"▶ Run stress test",running:"⏳ running…",
       budget_prompt:"Data budget for the test (MB):",token_prompt:"Collector token:",confirm_stop:"Stop the sensor on the phone? It will stop within one cycle.",
       run_a_test:"run a test",under_load:"under load",ago_s:n=>`${n} s ago`,ago_m:n=>`${n} min ago`,
       pending:(s)=>`requested (${s.streams} streams, ${s.secs}s, max ${s.budget_mb} MB) — starts at the phone's next check`,
@@ -420,7 +420,7 @@ const T = {
       card_network:"Rete",k_operator:"Operatore",k_plmn:"Codice (MCC/MNC)",k_tech:"Tecnologia",k_status:"Stato",
       card_conn:"Connettività (dato)",u_http:"risposta HTTP",u_lat:"latenza",k_dataok:"Il dato passa",k_link:"Stato link",
       card_device:"Dispositivo",k_batt:"Batteria",k_temp:"Temperatura",k_sim:"SIM",k_uptime:"Agente attivo da",
-      card_settings:"Impostazioni & stress test",k_sensor:"Sensore remoto",k_latload:"Latenza idle→carico",k_dataused:"Dati usati",k_when:"Quando",
+      card_settings:"Stress test",k_sensor:"Sensore remoto",k_latload:"Latenza idle→carico",k_dataused:"Dati usati",k_when:"Quando",
       chart_title:"Andamento segnale",chart_hint:"Segnale mediano per fascia. Passa il cursore per i valori esatti.",
       mix_title:"Mix di qualità",mix_hint:"Quota di tempo a ciascun livello.",mix_center:"usabile",
       tbl_title:"Campioni recenti",tbl_hint:"Ultime letture dal telefono.",
@@ -438,7 +438,7 @@ const T = {
       warn_hot:t=>`<b>Temperatura alta:</b> ${t}°C — monitoraggio attivo; si fermerà se continua a salire.`,
       qlbl:"qualità LTE (RSRP/SINR)",qnone:"nessuna misura",no_sig:"nessun dato segnale",yes:"sì",no:"no",updating:"aggiornamento ogni 3 s",paused:"in pausa",
       chart_nosig:"segnale non riportato (schermo spento)",daily_median:"media giornaliera",hourly_median:"media oraria",
-      stop:"⏹ Ferma sensore",resume_sensor:"▶ Riprendi sensore",run_stress:"▶ Avvia stress test",running:"⏳ in esecuzione…",
+      stop:"Ferma sensore",resume_sensor:"Riprendi sensore",run_stress:"▶ Avvia stress test",running:"⏳ in esecuzione…",
       budget_prompt:"Budget dati per il test (MB):",token_prompt:"Token del collector:",confirm_stop:"Fermare il sensore sul telefono? Si fermerà entro un ciclo.",
       run_a_test:"lancia un test",under_load:"sotto carico",ago_s:n=>`${n} s fa`,ago_m:n=>`${n} min fa`,
       pending:(s)=>`richiesto (${s.streams} flussi, ${s.secs}s, max ${s.budget_mb} MB) — parte al prossimo check del telefono`,
@@ -467,7 +467,6 @@ function applyStatic(){
   $("range30").textContent = L("30 days","30 giorni");
   $("rangeAll").textContent = L("all time","tutto");
   $("simBannerText").innerHTML = tr().banner;
-  $("pauseBtn").textContent = paused ? tr().resume : tr().pause;
   fillStatusFilter();
 }
 function fillStatusFilter(){
@@ -710,14 +709,6 @@ async function loadRecent(){
   catch(e){}
 }
 function loadAnalytics(){ loadHist(); loadRecent(); }
-
-$("pauseBtn").addEventListener("click", ()=>{
-  paused = !paused;
-  $("pauseBtn").textContent = paused ? tr().resume : tr().pause;
-  $("app").classList.toggle("paused", paused);
-  $("footText").textContent = paused ? tr().paused : tr().updating;
-  if (!paused) tick();
-});
 
 /* ---------- remote stop/resume + stress test ---------- */
 let ctrlStopped = false;
