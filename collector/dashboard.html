@@ -460,7 +460,6 @@ function applyStatic(){
   $("range7").textContent = L("7 days","7 giorni");
   $("range30").textContent = L("30 days","30 giorni");
   $("rangeAll").textContent = L("all time","tutto");
-  $("simBannerText").innerHTML = tr().banner;
   fillStatusFilter();
 }
 function fillStatusFilter(){
@@ -489,15 +488,15 @@ function render(d){
     return;
   }
   const conn = f.connection_status || "";
-  const simReady = ["ready","valid"].includes(f.sim_status);
-  const noSim = !simReady;
+  // only an explicit "absent" means no SIM: samples taken in deep sleep or
+  // without service can arrive with no SIM state at all
+  const noSim = f.sim_status === "absent";
   if (noSim) setPill("warn", tr().no_sim);
   else if (conn === "connected") setPill("ok", tr().connected);
   else if (f.network_type_code === "0" || f.network_type === "no_service") setPill("warn", tr().no_service);
   else setPill("warn", f.connection_status || "—");
 
   $("sub").textContent = d.label || "pocket-wifi";
-  $("simBanner").classList.toggle("show", noSim);
 
   const op = dash(f.operator);
   $("heroOp").textContent = op || (noSim ? "—" : tr().searching);
