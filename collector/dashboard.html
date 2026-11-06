@@ -253,10 +253,6 @@
       </div>
     </div>
 
-    <div class="banner" id="simBanner">
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 9v4m0 4h.01M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0Z"/></svg>
-      <div id="simBannerText"></div>
-    </div>
     <div class="banner" id="alertBanner"></div>
 
     <!-- KPI row -->
@@ -400,7 +396,6 @@ const T = {
       kpi_signal:"Typical signal",kpi_usable:"Usable time",kpi_reliab:"Data reliability",kpi_speed:"Measured speed",kpi_dataused:"Data used",
       cap_signal:"median this period",cap_usable:"quality ≥ fair",cap_reliab:"HTTP 204 ok",cap_speed:"last stress test",cap_dataused:"estimate this period",
       page_of:(a,b,n)=>`${a}–${b} of ${n}`,
-      banner:"<b>No SIM detected.</b> The dashboard is ready: signal, operator and cell will appear as soon as a SIM is inserted and the device registers.",
       unreachable:"offline",device_off:"phone not connected or off",no_sim:"no SIM",connected:"connected",no_service:"no service",searching:"searching…",
       pill_stopped:"stopped (overheat)",
       alarm_thermal:t=>`<b>Sensor stopped — overheating.</b> Battery ${t}°C ≥ 46 °C. Wake-lock released so the phone can sleep and cool; monitoring resumes only after a restart.`,
@@ -430,7 +425,6 @@ const T = {
       kpi_signal:"Segnale tipico",kpi_usable:"Tempo usabile",kpi_reliab:"Affidabilità dato",kpi_speed:"Velocità misurata",kpi_dataused:"Dati usati",
       cap_signal:"mediano nel periodo",cap_usable:"qualità ≥ discreta",cap_reliab:"HTTP 204 ok",cap_speed:"ultimo stress test",cap_dataused:"stima nel periodo",
       page_of:(a,b,n)=>`${a}–${b} di ${n}`,
-      banner:"<b>Nessuna SIM rilevata.</b> La dashboard è pronta: segnale, operatore e cella compariranno appena inserisci una SIM e il device si aggancia alla rete.",
       unreachable:"offline",device_off:"telefono non collegato o spento",no_sim:"nessuna SIM",connected:"connessa",no_service:"nessun servizio",searching:"ricerca…",
       pill_stopped:"fermo (surriscaldamento)",
       alarm_thermal:t=>`<b>Sensore fermato — surriscaldamento.</b> Batteria ${t}°C ≥ 46 °C. Wake-lock rilasciato per far dormire e raffreddare il telefono; riparte solo dopo un riavvio.`,
