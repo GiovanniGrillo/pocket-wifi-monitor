@@ -95,6 +95,7 @@
   .banner.show{display:flex;} .banner > div{flex:1;min-width:0;overflow-wrap:anywhere;} .banner b{color:var(--warn);font-weight:700;}
   .banner.alarm{background:color-mix(in srgb,var(--bad) 8%,var(--panel));border-color:color-mix(in srgb,var(--bad) 30%,var(--line));border-left-color:var(--bad);} .banner.alarm b{color:var(--bad);}
   .banner svg{flex:none;color:var(--warn);}
+  .banner code{font-family:var(--mono);font-size:11.5px;background:var(--panel-2);border:1px solid var(--line);border-radius:4px;padding:1px 5px;white-space:nowrap;}
 
   /* ---- KPI row ---- */
   .kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:16px;}
@@ -399,7 +400,7 @@ const T = {
       unreachable:"offline",device_off:"phone not connected or off",no_sim:"no SIM",connected:"connected",no_service:"no service",searching:"searching…",
       pill_stopped:"stopped (overheat)",
       alarm_thermal:t=>`<b>Sensor stopped — overheating.</b> Battery ${t}°C ≥ 46 °C. Wake-lock released so the phone can sleep and cool; monitoring resumes only after a restart.`,
-      alarm_stopped:"<b>Sensor stopped.</b> Remote stop command.",
+      alarm_stopped:"<b>Sensor stopped.</b> The agent on the phone has exited after a remote stop. It cannot be resumed from here: restart it manually in Termux with <code>bash ~/storage/shared/Download/run_agent.sh</code>.",
       warn_hot:t=>`<b>High temperature:</b> ${t}°C — still monitoring; it will stop if it keeps rising.`,
       qlbl:"LTE quality (RSRP/SINR)",qnone:"no reading",no_sig:"no signal data",yes:"yes",no:"no",updating:"updating every 3 s",paused:"paused",
       chart_nosig:"signal not reported (screen-off)",daily_median:"daily median",hourly_median:"hourly median",
