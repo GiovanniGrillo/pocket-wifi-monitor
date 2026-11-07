@@ -127,9 +127,18 @@
         <p class="sub" id="sub">loading…</p>
       </div>
       <div class="spacer"></div>
-      <button class="tbtn" id="themeBtn" title="Theme" aria-label="Theme">dark</button>
-      <button class="tbtn" id="langBtn">IT</button>
+      <div class="tb-actions">
+        <button class="tbtn" id="themeBtn" title="Theme" aria-label="Theme">dark</button>
+        <button class="tbtn" id="langBtn">IT</button>
+      </div>
     </header>
+
+    <div class="data-range">
+      <span class="data-range-label" id="t_range">Window</span>
+      <nav class="toggle" id="segDays" aria-label="Data time range">
+        <button data-d="1">24 hours</button><button data-d="7">7 days</button><button data-d="30" class="on">30 days</button><button data-d="365">all time</button>
+      </nav>
+    </div>
 
     <div class="toolbar">
       <nav class="toggle" id="statusSel" aria-label="status filter"></nav>
@@ -188,6 +197,9 @@ function labels(){
   $("nav_overview").textContent=L("Overview","Panoramica");
   $("nav_analytics").textContent=L("Analytics","Analisi");
   $("nav_data").textContent=L("Data","Dati");
+  $("t_range").textContent=L("Window","Finestra");
+  const segL={1:["24 hours","24 ore"],7:["7 days","7 giorni"],30:["30 days","30 giorni"],365:["all time","tutto"]};
+  [...$("segDays").children].forEach(b=>{const t=segL[b.dataset.d];b.textContent=L(t[0],t[1]);});
   $("csvBtn").textContent=L("export CSV","esporta CSV");
   // status toggle
   const sl=STLBL();
@@ -262,7 +274,7 @@ async function load(){
     let r=await fetch(`/recent?n=20000&days=${days}&meta=1`,{cache:"no-store",headers});
     if(r.status===403){ const t=prompt(L("Collector token:","Token del collector:")); if(t){localStorage.setItem("pw_token",t);return load();} return; }
     const res=await r.json(); rows=res.rows; const total=res.total;
-    const span=L(`last ${days===365?"all":days+"d"}`,`ultimi ${days===365?"tutto":days+"gg"}`);
+    const span=days===365?L("all time","tutto"):days===1?L("last 24h","ultime 24 ore"):L(`last ${days}d`,`ultimi ${days}gg`);
     $("sub").textContent = rows.length<total
       ? L(`latest ${rows.length.toLocaleString()} of ${total.toLocaleString()} samples · ${span}`,`ultimi ${rows.length.toLocaleString()} di ${total.toLocaleString()} campioni · ${span}`)
       : L(`${total.toLocaleString()} samples · ${span}`,`${total.toLocaleString()} campioni · ${span}`);
@@ -288,6 +300,7 @@ $("csvBtn").addEventListener("click",()=>{
   setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove();},0);
 });
 
+$("segDays").addEventListener("click",e=>{const b=e.target.closest("button");if(!b)return;days=parseInt(b.dataset.d,10);[...$("segDays").children].forEach(x=>x.classList.toggle("on",x===b));page=0;load();});
 $("statusSel").addEventListener("click",e=>{const b=e.target.closest("button");if(!b)return;statusF=b.dataset.s;[...$("statusSel").children].forEach(x=>x.classList.toggle("on",x===b));page=0;render();});
 $("headRow").addEventListener("click",e=>{const th=e.target.closest("th");if(!th)return;const k=th.dataset.k;if(k===sortKey)sortDir*=-1;else{sortKey=k;sortDir=(k==="t")?-1:1;}labels();render();});
 $("perPage").addEventListener("change",e=>{perPage=parseInt(e.target.value,10)||50;page=0;render();});
