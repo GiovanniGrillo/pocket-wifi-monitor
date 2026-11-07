@@ -231,8 +231,10 @@ def _seed_latest():
             return
 
 
-def _recent(n: int, days: int = 2) -> list:
-    """The last `n` stored samples, newest first, compacted for the UI table."""
+def _recent(n: int, days: int = 2, with_total: bool = False):
+    """The last `n` stored samples, newest first, compacted for the UI table.
+
+    With `with_total`, returns (rows, how many samples the window holds)."""
     rows = []
     for _dt, d in _load_samples(days):
         rows.append({
@@ -250,7 +252,7 @@ def _recent(n: int, days: int = 2) -> list:
             "temp": d.get("batt_temp"),
         })
     rows.reverse()
-    return rows[:n]
+    return (rows[:n], len(rows)) if with_total else rows[:n]
 
 
 def _conclusions(h: dict) -> list:
@@ -584,14 +586,18 @@ class Handler(BaseHTTPRequestHandler):
                 n = int(q.get("n", ["200"])[0])
             except ValueError:
                 n = 200
-            n = max(1, min(n, 2000))
+            n = max(1, min(n, 20000))
             try:
                 days = int(q.get("days", ["2"])[0])
             except ValueError:
                 days = 2
             days = max(1, min(days, 365))
             with _lock:
-                rows = _recent(n, days)
+                if "meta" in q:
+                    rows, total = _recent(n, days, with_total=True)
+                    rows = {"total": total, "rows": rows}
+                else:
+                    rows = _recent(n, days)
             self._send(200, json.dumps(rows, ensure_ascii=False).encode(),
                        "application/json; charset=utf-8")
             return
