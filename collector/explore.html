@@ -255,10 +255,13 @@ async function loadCollectorStatus(){
 async function load(){
   try{
     const headers={}; const tok=localStorage.getItem("pw_token"); if(tok) headers["X-Token"]=tok;
-    let r=await fetch(`/recent?n=2000&days=${days}`,{cache:"no-store",headers});
+    let r=await fetch(`/recent?n=20000&days=${days}&meta=1`,{cache:"no-store",headers});
     if(r.status===403){ const t=prompt(L("Collector token:","Token del collector:")); if(t){localStorage.setItem("pw_token",t);return load();} return; }
-    rows=await r.json();
-    $("sub").textContent = L(`${rows.length.toLocaleString()} samples · last ${days===365?"all":days+"d"}`,`${rows.length.toLocaleString()} campioni · ultimi ${days===365?"tutto":days+"gg"}`);
+    const res=await r.json(); rows=res.rows; const total=res.total;
+    const span=L(`last ${days===365?"all":days+"d"}`,`ultimi ${days===365?"tutto":days+"gg"}`);
+    $("sub").textContent = rows.length<total
+      ? L(`latest ${rows.length.toLocaleString()} of ${total.toLocaleString()} samples · ${span}`,`ultimi ${rows.length.toLocaleString()} di ${total.toLocaleString()} campioni · ${span}`)
+      : L(`${total.toLocaleString()} samples · ${span}`,`${total.toLocaleString()} campioni · ${span}`);
     render();
   }catch(e){ $("sub").textContent=L("collector offline","collector offline"); }
 }
