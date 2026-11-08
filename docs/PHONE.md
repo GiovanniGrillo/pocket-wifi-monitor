@@ -2,7 +2,7 @@
 
 Questa guida è il riferimento operativo per eseguire `phone_agent.py` su un
 telefono Android con SIM. Per il flusso completo e le decisioni di sicurezza
-vedi [README.md](README.md).
+vedi [README.md](../README.md).
 
 ## Requisiti
 
