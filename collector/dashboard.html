@@ -15,7 +15,7 @@
     /* minimal editorial palette: warm neutral, one desaturated data trio */
     --bg:#f1f0ec; --app:#ffffff; --panel:#ffffff; --panel-2:#f6f5f1; --line:#e4e2db; --line-strong:#d6d3ca;
     --ink:#1b1a17; --muted:#6a6760; --faint:#9c978c; --ink-pill:#1b1a17; --pill-ink:#f1f0ec;
-    --ok:#3f7d54; --warn:#b5862f; --bad:#b5524b; --bad2:#8c3f3a;
+    --ok:#3f7d54; --ok2:#2a5a3b; --warn:#b5862f; --bad:#b5524b; --bad2:#8c3f3a;
     --blue:#5b6ca8; --green:#3f7d54; --pink:#a85b7a; --amber:#f59e0b;
     --radius:14px; --radius-sm:10px;
     --shadow:0 1px 2px rgba(20,18,14,.03), 0 4px 16px rgba(20,18,14,.05);
@@ -25,12 +25,12 @@
   @media (prefers-color-scheme:dark){
     :root:not([data-theme="light"]){--bg:#141310;--app:#1b1a16;--panel:#1b1a16;--panel-2:#201e19;--line:#2d2b25;--line-strong:#3a382f;
       --ink:#ece9e1;--muted:#9c978c;--faint:#6a6760;--ink-pill:#ece9e1;--pill-ink:#141310;
-      --ok:#6aa77f;--warn:#d2a24e;--bad:#cf6f67;--bad2:#b5524b;--green:#6aa77f;--blue:#8f9cc8;
+      --ok:#6aa77f;--ok2:#9ccaa9;--warn:#d2a24e;--bad:#cf6f67;--bad2:#b5524b;--green:#6aa77f;--blue:#8f9cc8;
       --shadow:0 1px 2px rgba(0,0,0,.3),0 8px 24px rgba(0,0,0,.33);}
   }
   :root[data-theme="dark"]{--bg:#141310;--app:#1b1a16;--panel:#1b1a16;--panel-2:#201e19;--line:#2d2b25;--line-strong:#3a382f;
     --ink:#ece9e1;--muted:#9c978c;--faint:#6a6760;--ink-pill:#ece9e1;--pill-ink:#141310;
-    --ok:#6aa77f;--warn:#d2a24e;--bad:#cf6f67;--bad2:#b5524b;--green:#6aa77f;--blue:#8f9cc8;
+    --ok:#6aa77f;--ok2:#9ccaa9;--warn:#d2a24e;--bad:#cf6f67;--bad2:#b5524b;--green:#6aa77f;--blue:#8f9cc8;
     --shadow:0 1px 2px rgba(0,0,0,.3),0 8px 24px rgba(0,0,0,.33);}
   *{box-sizing:border-box;}
   html{scroll-behavior:smooth;}
@@ -149,8 +149,9 @@
   .catline .cl-v{font-size:12.5px;font-weight:700;}
 
   .hero-num{font-size:34px;font-weight:800;letter-spacing:-1.4px;line-height:1;}
-  .q{display:inline;} .q.q-excellent,.q.q-good{color:var(--ok);} .q.q-fair{color:var(--warn);} .q.q-poor,.q.q-very_poor,.q.q-none{color:var(--bad);}
-  .q-none{color:var(--faint);}
+  .stale #liveGrid{opacity:.45;transition:opacity .2s;}
+  .q{display:inline;} .q.q-excellent,.q.q-good{color:var(--ok);} .q.q-fair{color:var(--warn);} .q.q-poor,.q.q-very_poor{color:var(--bad);}
+  .q.q-none{color:var(--faint);}
   .btn-wide{margin-top:14px;width:100%;justify-content:center;}
   .settings-cols{display:grid;grid-template-columns:1fr 1fr;gap:0 40px;align-items:start;}
   @media (max-width:980px){.settings-cols{grid-template-columns:1fr;}}
@@ -281,7 +282,7 @@
     </div>
 
     <!-- realtime detail cards -->
-    <div class="grid">
+    <div class="grid" id="liveGrid">
       <section class="card c-3">
         <div class="card-head"><h2 data-i18n="signal">Signal</h2></div>
         <div class="sig-top">
@@ -310,7 +311,7 @@
           <div><div class="big" id="c_http">—</div><div class="u" data-i18n="u_http">HTTP response</div></div>
           <div><div class="big" id="c_lat">—</div><div class="u" data-i18n="u_lat">latency</div></div>
         </div>
-        <div class="catline"><span class="cl-k" data-i18n="k_dataok">Data works</span><span class="cl-v" id="c_ok" style="color:var(--green)">—</span></div>
+        <div class="catline"><span class="cl-k" data-i18n="k_dataok">Data works</span><span class="cl-v" id="c_ok">—</span></div>
         <div class="catline"><span class="cl-k" data-i18n="k_link">Link state</span><span class="cl-v" id="c_link">—</span></div>
       </section>
 
@@ -400,7 +401,7 @@ const T = {
       unreachable:"offline",device_off:"phone not connected or off",no_sim:"no SIM",connected:"connected",no_service:"no service",searching:"searching…",
       pill_stopped:"stopped (overheat)",
       alarm_thermal:t=>`<b>Sensor stopped — overheating.</b> Battery ${t}°C ≥ 46 °C. Wake-lock released so the phone can sleep and cool; monitoring resumes only after a restart.`,
-      alarm_stopped:"<b>Sensor stopped.</b> The agent on the phone has exited after a remote stop. It cannot be resumed from here: restart it manually in Termux with <code>bash ~/storage/shared/Download/run_agent.sh</code>.",
+      alarm_stopped:s=>"<b>Sensor stopped.</b> The agent on the phone has exited after a remote stop and cannot be restarted from here. "+(s?"First press <b>Resume sensor</b> (top right) to clear the stop, then restart":"Restart")+" it manually in Termux with <code>bash ~/storage/shared/Download/run_agent.sh</code>.",
       warn_hot:t=>`<b>High temperature:</b> ${t}°C — still monitoring; it will stop if it keeps rising.`,
       qlbl:"LTE quality (RSRP/SINR)",qnone:"no reading",no_sig:"no signal data",yes:"yes",no:"no",updating:"updating every 3 s",paused:"paused",
       chart_nosig:"signal not reported (screen-off)",daily_median:"daily median",hourly_median:"hourly median",
@@ -429,7 +430,7 @@ const T = {
       unreachable:"offline",device_off:"telefono non collegato o spento",no_sim:"nessuna SIM",connected:"connessa",no_service:"nessun servizio",searching:"ricerca…",
       pill_stopped:"fermo (surriscaldamento)",
       alarm_thermal:t=>`<b>Sensore fermato — surriscaldamento.</b> Batteria ${t}°C ≥ 46 °C. Wake-lock rilasciato per far dormire e raffreddare il telefono; riparte solo dopo un riavvio.`,
-      alarm_stopped:"<b>Sensore fermato.</b> L'agente sul telefono è terminato dopo uno stop remoto. Non si può riprendere da qui: va riavviato a mano in Termux con <code>bash ~/storage/shared/Download/run_agent.sh</code>.",
+      alarm_stopped:s=>"<b>Sensore fermato.</b> L'agente sul telefono è terminato dopo uno stop remoto e non si riavvia da qui. "+(s?"Prima premi <b>Riprendi sensore</b> (in alto a destra) per togliere lo stop, poi riavvialo":"Riavvialo")+" a mano in Termux con <code>bash ~/storage/shared/Download/run_agent.sh</code>.",
       warn_hot:t=>`<b>Temperatura alta:</b> ${t}°C — monitoraggio attivo; si fermerà se continua a salire.`,
       qlbl:"qualità LTE (RSRP/SINR)",qnone:"nessuna misura",no_sig:"nessun dato segnale",yes:"sì",no:"no",updating:"aggiornamento ogni 3 s",paused:"in pausa",
       chart_nosig:"segnale non riportato (schermo spento)",daily_median:"media giornaliera",hourly_median:"media oraria",
