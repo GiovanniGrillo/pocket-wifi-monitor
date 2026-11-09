@@ -42,7 +42,7 @@
   .side-link:hover{color:var(--ink);background:var(--fill);}
   .side-link.active{color:var(--ink);background:var(--fill);box-shadow:inset 2px 0 0 var(--ink);}
   .side-link .ic{width:15px;text-align:center;opacity:.8;font-size:12px;}
-  .side-foot{margin-top:auto;display:flex;flex-direction:column;gap:8px;padding-top:14px;border-top:1px solid var(--line);font-size:11px;color:var(--faint);}
+  .side-foot{margin-top:auto;display:flex;flex-direction:column;gap:8px;padding-top:12px;border-top:1px solid var(--line);font-size:11px;color:var(--faint);}
   .side-status{display:inline-flex;align-items:center;gap:8px;padding:0 4px;font-size:12.5px;font-weight:600;color:var(--bad);}
   .side-status.online{color:var(--ok);}
   .side-status .dot{width:7px;height:7px;border-radius:50%;background:currentColor;}
@@ -214,7 +214,9 @@ function filtered(){
     let va, vb;
     if(sortKey==="t"){ va=a.t||""; vb=b.t||""; return (va<vb?-1:va>vb?1:0)*sortDir; }
     if(sortKey==="status"){ va=statusOf(a); vb=statusOf(b); return (va<vb?-1:va>vb?1:0)*sortDir; }
-    if(sortKey==="operator"||sortKey==="band"){ va=(a[sortKey]||""); vb=(b[sortKey]||""); return (va<vb?-1:va>vb?1:0)*sortDir; }
+    if(sortKey==="operator"||sortKey==="band"){ va=(a[sortKey]||""); vb=(b[sortKey]||"");
+      if(!va&&!vb) return 0; if(!va) return 1; if(!vb) return -1;   // empty values always last
+      return (va<vb?-1:va>vb?1:0)*sortDir; }
     va=num(a[sortKey]); vb=num(b[sortKey]);
     if(va===null&&vb===null) return 0; if(va===null) return 1; if(vb===null) return -1;
     return (va-vb)*sortDir;
@@ -222,11 +224,12 @@ function filtered(){
   return r;
 }
 
+const esc=v=>String(v).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"})[c]);
 function fmtCell(r,key,kind,unit){
   if(kind==="time"){ const d=new Date(r.t); return d.toLocaleString(lang,{month:"2-digit",day:"2-digit",hour:"2-digit",minute:"2-digit",second:"2-digit"}); }
   if(kind==="status"){ const s=statusOf(r); return `<span class="st ${s}">${STLBL()[s]}</span>`; }
-  if(key==="operator") return r.operator||"—";
-  if(key==="band") return r.band||"—";
+  if(key==="operator") return r.operator?esc(r.operator):"—";
+  if(key==="band") return r.band?esc(r.band):"—";
   if(key==="http"){ return r.http!=null?r.http:(r.http_ok===false?"FAIL":"—"); }
   const v=num(r[key]); return v===null?"—":((key==="http_ms"?Math.round(v):v)+unit);
 }
@@ -268,12 +271,14 @@ async function loadCollectorStatus(){
   }catch(e){ setCollectorStatus(false); }
 }
 
+let loadSeq=0;   // ignore responses for a window that is no longer selected
 async function load(){
+  const my=++loadSeq;
   try{
     const headers={}; const tok=localStorage.getItem("pw_token"); if(tok) headers["X-Token"]=tok;
     let r=await fetch(`/recent?n=20000&days=${days}&meta=1`,{cache:"no-store",headers});
     if(r.status===403){ const t=prompt(L("Collector token:","Token del collector:")); if(t){localStorage.setItem("pw_token",t);return load();} return; }
-    const res=await r.json(); rows=res.rows; const total=res.total;
+    const res=await r.json(); if(my!==loadSeq) return; rows=res.rows; const total=res.total;
     const span=days===365?L("all time","tutto"):days===1?L("last 24h","ultime 24 ore"):L(`last ${days}d`,`ultimi ${days}gg`);
     $("sub").textContent = rows.length<total
       ? L(`latest ${rows.length.toLocaleString()} of ${total.toLocaleString()} samples · ${span}`,`ultimi ${rows.length.toLocaleString()} di ${total.toLocaleString()} campioni · ${span}`)
@@ -289,6 +294,7 @@ function toCSV(){
     if(kind==="time") return x.t||"";
     if(kind==="status") return statusOf(x);
     if(k==="http") return x.http!=null?x.http:(x.http_ok===false?"FAIL":"");
+    if(kind==="txt"){ const v=x[k]; return v==null?"":`"${String(v).replace(/"/g,'""')}"`; }
     const v=num(x[k]); return v===null?"":v;
   }).join(","));
   return head+"\n"+lines.join("\n");
