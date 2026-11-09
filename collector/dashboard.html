@@ -475,7 +475,7 @@ function setPill(cls, text){ $("statusPill").className = "pill " + cls; $("statu
 function renderAlert(f){
   const b = $("alertBanner"); const st = f.agent_status; const t = f.batt_temp ?? "?";
   if (st === "thermal_shutdown"){ b.className = "banner alarm show"; b.innerHTML = tr().alarm_thermal(t); }
-  else if (st === "stopped"){ b.className = "banner alarm show"; b.innerHTML = tr().alarm_stopped; }
+  else if (st === "stopped"){ b.className = "banner alarm show"; b.innerHTML = tr().alarm_stopped(ctrlStopped); }
   else if (f.batt_warn){ b.className = "banner show"; b.innerHTML = tr().warn_hot(t); }
   else { b.className = "banner"; b.innerHTML = ""; }
 }
@@ -484,6 +484,7 @@ function render(d){
   const f = (d && d.fields) || {};
   renderAlert(f);
   $("c_age").textContent = (d && d.age_s!=null) ? L("last data ","ultimo dato ") + fmtDur(d.age_s) + L(" ago"," fa") : L("no data yet","nessun dato");
+  $("app").classList.toggle("stale", !d || !d.reachable);
   if (!d || !d.reachable){
     setPill("bad", f.agent_status === "thermal_shutdown" ? tr().pill_stopped : tr().unreachable);
     $("sub").textContent = f.agent_status === "thermal_shutdown" ? tr().pill_stopped : tr().device_off;
@@ -537,10 +538,11 @@ function render(d){
   cLat.textContent = ms != null ? ms+" ms" : "—";
   cLat.style.color = ms==null ? "" : (ms<150?"var(--ok)":ms<400?"var(--warn)":"var(--bad)");
   $("c_ok").textContent = f.http_ok===true ? tr().yes : (f.http_ok===false ? tr().no : "—");
+  $("c_ok").style.color = f.http_ok===true ? "var(--ok)" : (f.http_ok===false ? "var(--bad)" : "");
   $("c_link").textContent = conn==="connected" ? tr().connected : (dash(conn) || "—");
 
   const batt = dash(f.batt_pct) ?? dash(f.battery_percent);
-  const plugged = f.batt_plugged || f.battery_charging === "1";
+  const plugged = /^PLUGGED/.test(String(f.batt_plugged || "")) || f.battery_charging === "1";
   const battIcon = plugged ? "⚡" : (batt != null && batt <= 15 ? "🪫" : "🔋");
   $("f_batt").textContent = batt != null ? battIcon+" "+batt+"%" : "—";
   const tp = dash(f.batt_temp); const tEl = $("f_temp");
@@ -593,25 +595,34 @@ function renderKpis(h){
 
 /* ---------- main chart (interactive) ---------- */
 let rsrpPts = [], rsrpBucket = "hour";
-function sigWord(rsrp){ if(rsrp==null) return "—";
-  if(rsrp>=-90) return L("strong","forte"); if(rsrp>=-100) return L("good","buono");
-  if(rsrp>=-108) return L("fair","discreto"); if(rsrp>=-115) return L("weak","scarso"); return L("very weak","molto scarso"); }
-function fmtTick(t){ const d=new Date(t);
-  if(rsrpBucket==="day") return d.toLocaleDateString(lang==="it"?"it-IT":"en-GB",{day:"2-digit",month:"2-digit"});
-  return String(d.getHours()).padStart(2,"0"); }
+// same thresholds as agent/bands.py classify_signal
+function sigWord(rsrp){ if(rsrp==null) return "—"; return tr().q[rsrp>=-80?"excellent":rsrp>=-90?"good":rsrp>=-100?"fair":rsrp>=-110?"poor":"very_poor"]; }
+function fmtTick(t,span){ const d=new Date(t), loc=lang==="it"?"it-IT":"en-GB";
+  const day=d.toLocaleDateString(loc,{day:"2-digit",month:"2-digit"}), hh=String(d.getHours()).padStart(2,"0");
+  if(rsrpBucket==="day") return day;
+  return span>86400e3 ? `${day} ${hh}h` : hh; }
 function renderChart(h){
   const s=(h&&h.series)||[],W=800,H=220,padL=40,padR=12,padT=10,padB=28,yMin=-120,yMax=-70;
   rsrpBucket=(h&&h.bucket)||"hour";
-  const x=i=>padL+(s.length<=1?(W-padL-padR)/2:i*(W-padL-padR)/(s.length-1)),y=v=>padT+(yMax-v)*(H-padT-padB)/(yMax-yMin);
+  // x is real time, so missing buckets show up as gaps instead of being squeezed out
+  const ts=s.map(p=>new Date(p.t).getTime()), t0=ts[0], t1=ts[ts.length-1], span=t1-t0;
+  const stepMs=rsrpBucket==="day"?86400e3:3600e3;
+  const x=i=>padL+(span<=0?(W-padL-padR)/2:(ts[i]-t0)*(W-padL-padR)/span),y=v=>padT+(yMax-v)*(H-padT-padB)/(yMax-yMin);
   const baseY=H-padB; let g="";
-  const zones=[[-70,-95,"var(--ok)"],[-95,-105,"var(--warn)"],[-105,-120,"var(--bad)"]];
+  const zones=[[-70,-90,"var(--ok)"],[-90,-100,"var(--warn)"],[-100,-120,"var(--bad)"]];
   zones.forEach(([a,b,c])=>{g+=`<rect x="${padL}" y="${y(a).toFixed(1)}" width="${W-padL-padR}" height="${(y(b)-y(a)).toFixed(1)}" fill="${c}" opacity="0.08"/>`;});
   for(let v=-70;v>=-120;v-=10){const yy=y(v);g+=`<text x="4" y="${yy+4}" fill="var(--faint)" font-size="10">${v}</text>`;}
   g+=`<line x1="${padL}" y1="${baseY}" x2="${W-padR}" y2="${baseY}" stroke="var(--line)"/>`;
-  const step=Math.max(1,Math.ceil(s.length/8));
-  s.forEach((p,i)=>{if(i%step===0||i===s.length-1){g+=`<text x="${x(i).toFixed(1)}" y="${H-8}" fill="var(--faint)" font-size="9.5" text-anchor="middle">${fmtTick(p.t)}</text>`;}});
+  // ticks: evenly spaced in time, snapped to the nearest bucket, never closer than ~90px
+  const nT=span<=0?1:Math.min(7,Math.max(2,Math.round((W-padL-padR)/(span>86400e3&&rsrpBucket!=="day"?130:90))));
+  let lastX=-1e9;
+  for(let k=0;k<nT;k++){ const tt=Math.round((nT===1?t0:t0+span*k/(nT-1))/stepMs)*stepMs;
+    const xx=span<=0?x(0):padL+(tt-t0)*(W-padL-padR)/span; if(xx<padL-1||xx>W-padR+1||xx-lastX<60) continue; lastX=xx;
+    g+=`<text x="${xx.toFixed(1)}" y="${H-8}" fill="var(--faint)" font-size="9.5" text-anchor="middle">${fmtTick(tt,span)}</text>`; }
   let pts=[],segs=[];
-  s.forEach((p,i)=>{if(p.rsrp_median==null){if(pts.length)segs.push(pts);pts=[];}else pts.push(`${x(i).toFixed(1)},${y(p.rsrp_median).toFixed(1)}`);});
+  s.forEach((p,i)=>{const gap=i>0&&ts[i]-ts[i-1]>1.5*stepMs;
+    if(p.rsrp_median==null||gap){if(pts.length)segs.push(pts);pts=[];}
+    if(p.rsrp_median!=null) pts.push(`${x(i).toFixed(1)},${y(p.rsrp_median).toFixed(1)}`);});
   if(pts.length)segs.push(pts);
   segs.forEach(seg=>g+=`<polyline points="${seg.join(' ')}" fill="none" stroke="var(--ink)" stroke-width="1.8" stroke-linejoin="round"/>`);
   rsrpPts=[];
