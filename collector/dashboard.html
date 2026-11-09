@@ -652,7 +652,8 @@ function rsrpHover(ev){
   tip.innerHTML=`<div class="tw">${when}</div>${sigLine}<br><span class="tm">${p.n} ${L("samples","campioni")} · ${L("data ok","dato ok")} ${p.ok_rate}%</span>`;
   tip.hidden=false;
   const wrapR=$("rsrpWrap").getBoundingClientRect();
-  tip.style.left=((best.cx/800)*r.width+(r.left-wrapR.left)).toFixed(1)+"px";
+  const half=tip.offsetWidth/2, tx=(best.cx/800)*r.width+(r.left-wrapR.left);
+  tip.style.left=Math.max(half,Math.min(wrapR.width-half,tx)).toFixed(1)+"px";
   tip.style.top=((best.cy/220)*r.height+(r.top-wrapR.top)).toFixed(1)+"px";
 }
 function rsrpLeave(){$("rsrpTip").hidden=true;const c=$("rsrpCross");if(c)c.setAttribute("visibility","hidden");const d=$("rsrpDot");if(d)d.setAttribute("visibility","hidden");}
@@ -660,7 +661,7 @@ function rsrpLeave(){$("rsrpTip").hidden=true;const c=$("rsrpCross");if(c)c.setA
 /* ---------- quality donut ---------- */
 function renderMix(h){
   const p=(h&&h.quality_pct)||{};
-  const segs=[["excellent","var(--ok)"],["good","var(--green)"],["fair","var(--warn)"],["poor","var(--bad)"],["very_poor","var(--bad2)"]];
+  const segs=[["excellent","var(--ok2)"],["good","var(--ok)"],["fair","var(--warn)"],["poor","var(--bad)"],["very_poor","var(--bad2)"]];
   const total=segs.reduce((s,[k])=>s+(p[k]||0),0);
   const r=54,C=2*Math.PI*r,cx=70,cy=70; let off=0,legend="";
   let g=`<circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="var(--panel-2)" stroke-width="16"/>`;
@@ -677,6 +678,7 @@ function renderMix(h){
 }
 
 /* ---------- recent-samples table ---------- */
+const esc=v=>String(v).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"})[c]);
 function statusOf(r){ if(r.http_ok===false) return "offline"; if(r.rsrp==null||r.rsrp==="") return "nosignal"; return "online"; }
 function renderTable(){
   if(!recent){ return; }
@@ -689,7 +691,7 @@ function renderTable(){
   const stCls={online:"b-ok",nosignal:"b-warn",offline:"b-bad"};
   $("tblBody").innerHTML = slice.length ? slice.map(r=>{ const st=statusOf(r); const d=new Date(r.t);
       const time=d.toLocaleString(lang,{month:"2-digit",day:"2-digit",hour:"2-digit",minute:"2-digit",second:"2-digit"});
-      return `<tr><td class="mono">${time}</td><td>${r.operator||"—"}</td><td>${r.band||"—"}</td>`
+      return `<tr><td class="mono">${time}</td><td>${r.operator?esc(r.operator):"—"}</td><td>${r.band?esc(r.band):"—"}</td>`
         +`<td class="mono">${r.rsrp!=null&&r.rsrp!==""?r.rsrp+" dBm":"—"}</td>`
         +`<td class="mono">${r.http??(r.http_ok===false?"FAIL":"—")}</td>`
         +`<td><span class="tbadge ${stCls[st]}">${stLbl[st]}</span></td></tr>`;
@@ -701,17 +703,22 @@ function renderTable(){
 /* ---------- realtime loop ---------- */
 async function tick(){
   try { const r = await privateFetch("/data", {cache:"no-store"}); lastData = await r.json(); render(lastData); }
-  catch (e) { setPill("bad", "backend offline"); }
+  catch (e) { setPill("bad", L("collector offline","collector offline")); }
 }
 function loop(){ if(!paused) tick(); timer = setTimeout(loop, REFRESH); }
 
 /* ---------- analytics (history + recent) ---------- */
+let histSeq = 0, recentSeq = 0;   // drop responses for a window that is no longer selected
 async function loadHist(){
-  try{ hist = await (await privateFetch(`/history?days=${days}`, {cache:"no-store"})).json(); renderKpis(hist); renderChart(hist); renderMix(hist); }
+  const my = ++histSeq;
+  try{ const h = await (await privateFetch(`/history?days=${days}`, {cache:"no-store"})).json(); if(my!==histSeq) return;
+    hist = h; renderKpis(hist); renderChart(hist); renderMix(hist); }
   catch(e){}
 }
 async function loadRecent(){
-  try{ recent = await (await privateFetch(`/recent?n=400&days=${Math.min(days,7)}`, {cache:"no-store"})).json(); renderTable(); }
+  const my = ++recentSeq;
+  try{ const r = await (await privateFetch(`/recent?n=400&days=${Math.min(days,7)}`, {cache:"no-store"})).json(); if(my!==recentSeq) return;
+    recent = r; renderTable(); }
   catch(e){}
 }
 function loadAnalytics(){ loadHist(); loadRecent(); }
@@ -832,7 +839,7 @@ syncThemeBtn();
 
 applyStatic();
 $("footText").textContent = tr().updating;
-tick(); loop(); refreshCtrl();
+loop(); refreshCtrl();
 loadAnalytics();
 setInterval(refreshCtrl, 5000);
 setInterval(loadAnalytics, 30000);
