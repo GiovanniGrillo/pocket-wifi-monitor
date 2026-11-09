@@ -56,8 +56,8 @@
   :focus-visible{outline:2px solid color-mix(in srgb,var(--txt) 40%,transparent);outline-offset:2px;}
 
   /* shell: sidebar + content */
-  .shell{display:flex;min-height:100vh;}
-  .sidebar{width:220px;flex:none;position:sticky;top:0;align-self:flex-start;height:100vh;display:flex;flex-direction:column;gap:4px;padding:22px 14px;background:var(--bg);border-right:1px solid var(--line);}
+  .shell{display:flex;min-height:100dvh;}
+  .sidebar{width:220px;flex:none;position:sticky;top:0;align-self:flex-start;height:100dvh;display:flex;flex-direction:column;gap:4px;padding:22px 14px;background:var(--bg);border-right:1px solid var(--line);}
   .brand{padding:4px 8px 16px;}
   .side-nav{display:flex;flex-direction:column;gap:3px;}
   .side-link{display:flex;align-items:center;gap:11px;height:34px;box-sizing:border-box;font-size:13px;font-weight:600;color:var(--dim);text-decoration:none;padding:9px 11px;border-radius:8px;transition:background .15s,color .15s;cursor:pointer;}
@@ -130,7 +130,9 @@
   .meter .zf{background:color-mix(in srgb,var(--warn) 40%,var(--bg));}
   .meter .zg{background:color-mix(in srgb,var(--accent) 40%,var(--bg));border-radius:0 2px 2px 0;}
   .meter .marker{position:absolute;top:-7px;width:2px;height:18px;background:var(--txt);transform:translateX(-1px);}
-  .meter-scale{display:flex;justify-content:space-between;font-size:9.5px;color:var(--faint);font-family:var(--mono);}
+  .meter-scale{position:relative;height:14px;font-size:9.5px;color:var(--faint);font-family:var(--mono);}
+  .meter-scale span{position:absolute;top:0;transform:translateX(-50%);white-space:nowrap;}
+  .meter-scale span:first-child{transform:none;} .meter-scale span:last-child{transform:translateX(-100%);}
   .meter-val{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:4px;}
   .meter-val .w{font-size:16px;font-weight:600;} .meter-val .n{font-family:var(--mono);color:var(--dim);font-size:12px;}
 
@@ -209,8 +211,8 @@
     <h2 id="t_meter">Signal strength</h2>
     <p class="hint" id="h_meter"></p>
     <div class="meter-val"><span class="w" id="meterWord">—</span><span class="n" id="meterNum"></span></div>
-    <div class="meter"><div class="z zb" style="width:30%"></div><div class="z zf" style="width:20%"></div><div class="z zg" style="width:50%"></div><div class="marker" id="meterMark" style="left:0%"></div></div>
-    <div class="meter-scale"><span>-120</span><span>-110</span><span>-100</span><span>-90</span><span>-70 dBm</span></div>
+    <div class="meter"><div class="z zb" style="width:40%"></div><div class="z zf" style="width:20%"></div><div class="z zg" style="width:40%"></div><div class="marker" id="meterMark" style="left:0%"></div></div>
+    <div class="meter-scale"><span style="left:0">-120</span><span style="left:20%">-110</span><span style="left:40%">-100</span><span style="left:60%">-90</span><span style="left:100%">-70 dBm</span></div>
   </section>
 
   <div class="kpis" id="kpis"></div>
@@ -263,7 +265,7 @@ const L=(en,it)=>lang==="it"?it:en;
 
 const PROFILES={family:{mbps:15,latSoft:120,latHard:250},uhd4k:{mbps:30,latSoft:150,latHard:300},
   work:{mbps:8,latSoft:60,latHard:120},basic:{mbps:4,latSoft:200,latHard:400},custom:{mbps:10,latSoft:120,latHard:250}};
-let profile=localStorage.getItem("pw_profile")||"family";
+let profile=localStorage.getItem("pw_profile");if(!PROFILES[profile])profile="family";
 const profName=id=>({family:L("Family / streaming","Famiglia / streaming"),uhd4k:L("Streaming 4K","Streaming 4K"),
   work:L("Remote work / calls","Smart working / videochiamate"),basic:L("Basic: web + smart home","Base: navigazione + domotica"),
   custom:L("Custom","Personalizzato")})[id];
@@ -274,11 +276,12 @@ function profileTarget(){const p={...PROFILES[profile]};if(profile==="custom")p.
 function sig(rsrp){
   if(rsrp==null) return {w:"—",cls:"",pos:0};
   let w,cls;
-  if(rsrp>=-90){w=L("strong","forte");cls="good";}
-  else if(rsrp>=-100){w=L("good","buono");cls="good";}
-  else if(rsrp>=-108){w=L("fair","discreto");cls="warn";}
-  else if(rsrp>=-115){w=L("weak","scarso");cls="bad";}
-  else {w=L("very weak","molto scarso");cls="bad";}
+  // same thresholds as agent/bands.py classify_signal and the Overview
+  if(rsrp>=-80){w=L("excellent","eccellente");cls="good";}
+  else if(rsrp>=-90){w=L("good","buono");cls="good";}
+  else if(rsrp>=-100){w=L("fair","discreto");cls="warn";}
+  else if(rsrp>=-110){w=L("poor","scarso");cls="bad";}
+  else {w=L("very poor","pessimo");cls="bad";}
   const pos=Math.max(0,Math.min(1,(rsrp+120)/50));
   return {w,cls,pos};
 }
@@ -328,7 +331,8 @@ function renderKpis(h){
   const st=h.last_stress||{};
   const latAdd=(st.lat_idle_ms!=null&&st.lat_load_ms!=null)?Math.round(st.lat_load_ms-st.lat_idle_ms):null;
   const t=[];
-  if(latAdd!=null) t.push(kpi(L("Lag under load","Lag sotto carico"),"+"+latAdd,latAdd<=120?"good":latAdd<=250?"warn":"bad","ms",L("extra delay when busy (bufferbloat)","ritardo extra quando occupato")));
+  const pt=profileTarget();
+  if(latAdd!=null) t.push(kpi(L("Lag under load","Lag sotto carico"),"+"+latAdd,latAdd<=pt.latSoft?"good":latAdd<=pt.latHard?"warn":"bad","ms",L("extra delay when busy (bufferbloat)","ritardo extra quando occupato")));
   else t.push(kpi(L("Lag under load","Lag sotto carico"),"—","","",L("run a stress test to measure","fai uno stress test per misurare")));
   t.push(kpi(L("Main band","Banda principale"),h.band_main||"—",h.low_band_pct>0?"good":"","",h.low_band_pct>0?L(h.low_band_pct+"% low-band (good reach)",h.low_band_pct+"% banda bassa (buona portata)"):L("no low-band","nessuna banda bassa")));
   t.push(kpi(L("Covered","Coperti"),h.days_covered!=null?h.days_covered:"—","",L("days","giorni"),h.n?h.n.toLocaleString()+L(" samples"," campioni"):""));
@@ -464,7 +468,7 @@ function renderPotential(h){
 function render(){
   fillLabels();
   const h=last;
-  $("sub").textContent=h&&h.n?`${h.n.toLocaleString()} ${L("samples","campioni")} · ${(h.operators||[]).join(", ")||"—"} · ${L("last","ultimi")} ${h.window_days}${L("d","gg")}`:L("waiting for data…","in attesa di dati…");
+  $("sub").textContent=h&&h.n?`${h.n.toLocaleString()} ${L("samples","campioni")} · ${(h.operators||[]).join(", ")||"—"} · ${h.window_days>=365?L("all time","tutto"):h.window_days===1?L("last 24h","ultime 24 ore"):L("last ","ultimi ")+h.window_days+L("d","gg")}`:L("waiting for data…","in attesa di dati…");
   if(!h){return;}
   const c=buildConclusions(h);
   $("vLvl").className="badge "+c.level;
@@ -498,13 +502,15 @@ async function loadCollectorStatus(){
   }catch(e){setCollectorStatus(false);}
 }
 
+let loadSeq=0;   // ignore responses for a window that is no longer selected
 async function load(){
+  const my=++loadSeq;
   try{
     const headers={};const tok=localStorage.getItem("pw_token");if(tok)headers["X-Token"]=tok;
     let r=await fetch(`/history?days=${days}`,{cache:"no-store",headers});
-    if(r.status===403){const t=prompt("Token:");if(t){localStorage.setItem("pw_token",t);return load();}return;}
-    last=await r.json();render();
-  }catch(e){$("sub").textContent="collector offline";}
+    if(r.status===403){const t=prompt(L("Collector token:","Token del collector:"));if(t){localStorage.setItem("pw_token",t);return load();}return;}
+    const h=await r.json();if(my!==loadSeq)return;last=h;render();
+  }catch(e){$("sub").textContent=L("collector offline","collector offline");}
 }
 
 $("langBtn").addEventListener("click",()=>{lang=lang==="it"?"en":"it";localStorage.setItem("pw_lang",lang);render();});
