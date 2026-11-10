@@ -194,6 +194,9 @@ def _load_samples(days: int):
                         d = json.loads(line)
                     except ValueError:
                         continue
+                    if not isinstance(d, dict):
+                        continue
+                    d = _clean(d)
                     dt = _parse_ts(d.get("timestamp"))
                     if dt is None or dt < cutoff:
                         continue
@@ -206,6 +209,38 @@ def _load_samples(days: int):
             continue
     out.sort(key=lambda x: x[0])
     return out
+
+
+_TEXT_FIELDS = ("source", "timestamp", "operator", "network_type", "sig_band", "connection_status",
+                "agent_status", "kind")
+_INT_FIELDS = ("sig_rsrp", "sig_rsrq", "sig_sinr")
+
+
+def _clean(d: dict) -> dict:
+    """Make one stored/received sample safe for the aggregations: text fields must be
+    strings and signal fields plain integers. A single malformed record (from a buggy
+    client, or a hand-edited file) must never break /history or /recent for good."""
+    for k in _TEXT_FIELDS:
+        v = d.get(k)
+        if v is not None and not isinstance(v, str):
+            if isinstance(v, (int, float)) and not isinstance(v, bool):
+                d[k] = str(v)
+            else:
+                d.pop(k)
+    for k in _INT_FIELDS:
+        v = d.get(k)
+        if v is None or v == "":
+            continue
+        try:
+            d[k] = int(float(v))
+        except (TypeError, ValueError, OverflowError):
+            d.pop(k)
+    return d
+
+
+def _is_signal_sample(d: dict) -> bool:
+    """Stress results and stop/thermal notices are events, not radio samples."""
+    return d.get("kind") != "stress_result" and d.get("agent_status") not in ("stopped", "thermal_shutdown")
 
 
 def _seed_latest():
@@ -223,6 +258,9 @@ def _seed_latest():
                 d = json.loads(line)
             except ValueError:
                 continue
+            if not isinstance(d, dict) or d.get("kind") == "stress_result":
+                continue
+            d = _clean(d)
             ts = _parse_ts(d.get("timestamp"))
             if ts is None:
                 continue
@@ -237,6 +275,8 @@ def _recent(n: int, days: int = 2, with_total: bool = False):
     With `with_total`, returns (rows, how many samples the window holds)."""
     rows = []
     for _dt, d in _load_samples(days):
+        if not _is_signal_sample(d):
+            continue
         rows.append({
             "t": d.get("timestamp"),
             "operator": d.get("operator"),
@@ -292,7 +332,7 @@ def _conclusions(h: dict) -> list:
 
 
 def _history(days: int) -> dict:
-    samples = _load_samples(days)
+    samples = [(dt, d) for dt, d in _load_samples(days) if _is_signal_sample(d)]
     h = {"window_days": days, "n": len(samples)}
     if not samples:
         h.update({"rsrp": {}, "quality_pct": {}, "series": [], "conclusions": _conclusions(h)})
@@ -353,8 +393,10 @@ def _history(days: int) -> dict:
     bucket = "hour" if span_h <= 72 else "day"
     buckets = {}
     for dt, d in samples:
-        key = dt.replace(minute=0, second=0, microsecond=0) if bucket == "hour" \
-            else dt.replace(hour=0, minute=0, second=0, microsecond=0)
+        # local time, so the daily bars split days like the day-by-day view
+        lt = dt.astimezone()
+        key = lt.replace(minute=0, second=0, microsecond=0) if bucket == "hour" \
+            else lt.replace(hour=0, minute=0, second=0, microsecond=0)
         buckets.setdefault(key, []).append(d)
     series = []
     for key in sorted(buckets):
@@ -470,32 +512,51 @@ class Handler(BaseHTTPRequestHandler):
         # the PC's own browser (localhost) may control without the token
         return bool(self.client_address) and self.client_address[0] in ("127.0.0.1", "::1")
 
+    def _read_json(self):
+        """Parse the request body; on a bad length or bad JSON answer 400 and return None."""
+        try:
+            n = int(self.headers.get("Content-Length", 0))
+            if n < 0 or n > 8 * 1024 * 1024:
+                raise ValueError("bad length")
+            return json.loads(self.rfile.read(n) or b"{}")
+        except (ValueError, TypeError):
+            self._send(400, b"bad request body", "text/plain")
+            return None
+
     def do_POST(self):
         global _last_stress
         if self.path == "/control":
             if not self._authorized():
                 self._send(403, b"bad token", "text/plain")
                 return
-            try:
-                n = int(self.headers.get("Content-Length", 0))
-                body = json.loads(self.rfile.read(n) or b"{}")
-            except (ValueError, TypeError):
-                self._send(400, b"bad json", "text/plain")
+            body = self._read_json()
+            if body is None:
                 return
-            with _lock:
-                if isinstance(body, dict) and "stop" in body:
-                    _control["stop"] = bool(body["stop"])
-                if isinstance(body, dict) and "stress" in body:
-                    req = body["stress"]
-                    if isinstance(req, dict):
-                        _control["stress"] = {
+            if not isinstance(body, dict):
+                self._send(400, b"want object", "text/plain")
+                return
+            # validate everything before touching the shared state
+            stress = ...
+            if "stress" in body:
+                req = body["stress"]
+                if isinstance(req, dict):
+                    try:
+                        stress = {
                             "id": int(datetime.now(timezone.utc).timestamp()),
                             "budget_mb": max(1, min(int(req.get("budget_mb", 50)), 1000)),
                             "streams": max(1, min(int(req.get("streams", 3)), 16)),
                             "secs": max(5, min(int(req.get("secs", 15)), 120)),
                         }
-                    else:
-                        _control["stress"] = None  # cancel a pending test
+                    except (TypeError, ValueError, OverflowError):
+                        self._send(400, b"bad stress parameters", "text/plain")
+                        return
+                else:
+                    stress = None  # cancel a pending test
+            with _lock:
+                if "stop" in body:
+                    _control["stop"] = bool(body["stop"])
+                if stress is not ...:
+                    _control["stress"] = stress
                 _save_control()
                 state = dict(_control)
                 state["last_stress"] = _last_stress
@@ -507,15 +568,12 @@ class Handler(BaseHTTPRequestHandler):
         if not self._authorized():
             self._send(403, b"bad token", "text/plain")
             return
-        try:
-            n = int(self.headers.get("Content-Length", 0))
-            payload = json.loads(self.rfile.read(n) or b"{}")
-        except (ValueError, TypeError):
-            self._send(400, b"bad json", "text/plain")
+        payload = self._read_json()
+        if payload is None:
             return
         # Accept one sample (dict) or a batch (list of dicts, oldest first).
         items = payload if isinstance(payload, list) else [payload]
-        items = [x for x in items if isinstance(x, dict)]
+        items = [_clean(x) for x in items if isinstance(x, dict)]
         if not items:
             self._send(400, b"want object or array", "text/plain")
             return
@@ -533,10 +591,12 @@ class Handler(BaseHTTPRequestHandler):
             except OSError as e:
                 self._send(500, f"store error: {e}".encode(), "text/plain")
                 return
-            last = items[-1]
-            _latest["ts"] = _parse_ts(last.get("timestamp")) or datetime.now(timezone.utc)
-            _latest["fields"] = last
-            _latest["source"] = str(last.get("source", "phone"))
+            # the live view shows the last radio sample (or stop notice), not a stress result
+            last = next((x for x in reversed(items) if x.get("kind") != "stress_result"), None)
+            if last is not None:
+                _latest["ts"] = _parse_ts(last.get("timestamp")) or datetime.now(timezone.utc)
+                _latest["fields"] = last
+                _latest["source"] = str(last.get("source", "phone"))
             resp = {"ok": True, "n": len(items), "stop": bool(_control.get("stop")),
                     "stress": _control.get("stress")}
         _check_alerts(items)
@@ -610,7 +670,7 @@ class Handler(BaseHTTPRequestHandler):
                 state["last_stress"] = _last_stress
             self._send(200, json.dumps(state).encode(), "application/json")
             return
-        if self.path == "/data":
+        if path == "/data":
             if not self._authorized():
                 self._send(403, b"bad token", "text/plain")
                 return
