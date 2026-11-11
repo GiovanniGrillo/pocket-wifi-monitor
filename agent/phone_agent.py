@@ -209,6 +209,7 @@ def run_stress(secs: int, streams: int, budget_mb: int) -> dict:
     chunk = 2 * 1024 * 1024   # smaller chunk => the budget cap overshoots less
     budget = budget_mb * 1024 * 1024
     total = [0]
+    reserved = [0]            # bytes already promised to in-flight requests
     lock = threading.Lock()
 
     idle = [m for m in (_lat_once() for _ in range(3)) if m is not None]
@@ -219,12 +220,17 @@ def run_stress(secs: int, streams: int, budget_mb: int) -> dict:
 
     def dlworker():
         while time.monotonic() < deadline:
+            # reserve the next request's size first, so parallel streams can
+            # never fetch more than the budget between them
             with lock:
-                if total[0] >= budget:
+                n = min(chunk, budget - reserved[0])
+                if n <= 0:
                     return
-            b = _dl_bytes(DOWN_URL.format(n=chunk), deadline)
+                reserved[0] += n
+            b = _dl_bytes(DOWN_URL.format(n=n), deadline)
             with lock:
                 total[0] += b
+                reserved[0] -= n - b   # give back what was not downloaded
             if b == 0:
                 return
 
@@ -357,7 +363,7 @@ def flush_outbox(collector: str, token: str):
     try:
         size = OUTBOX.stat().st_size
     except OSError:
-        return 0, True, 0
+        return 0, True, 0, None
     off = _read_cursor()
     if off > size:          # file rotated/truncated -> restart from top
         off = 0
