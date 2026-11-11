@@ -9,7 +9,8 @@
 termux-wake-lock
 sleep 15                      # lascia salire rete + Tailscale dopo il boot
 cd "$HOME"
-# Store private values in ~/.profile or export them before installing this hook.
+# Termux:Boot does not read ~/.profile by itself: load the private values here.
+[ -f "$HOME/.profile" ] && . "$HOME/.profile"
 : "${POCKET_WIFI_COLLECTOR:?Imposta POCKET_WIFI_COLLECTOR in ~/.profile}"
 : "${POCKET_WIFI_TOKEN:?Imposta POCKET_WIFI_TOKEN in ~/.profile}"
 exec bash ~/storage/shared/Download/run_agent.sh >> "$HOME/agent.log" 2>&1
