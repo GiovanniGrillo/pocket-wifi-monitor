@@ -618,7 +618,8 @@ function renderChart(h){
   let lastX=-1e9;
   for(let k=0;k<nT;k++){ const tt=Math.round((nT===1?t0:t0+span*k/(nT-1))/stepMs)*stepMs;
     const xx=span<=0?x(0):padL+(tt-t0)*(W-padL-padR)/span; if(xx<padL-1||xx>W-padR+1||xx-lastX<60) continue; lastX=xx;
-    g+=`<text x="${xx.toFixed(1)}" y="${H-8}" fill="var(--faint)" font-size="9.5" text-anchor="middle">${fmtTick(tt,span)}</text>`; }
+    const anchor=xx>W-padR-40?"end":xx<padL+20?"start":"middle";   // keep edge labels inside the chart
+    g+=`<text x="${(anchor==="end"?W-padR:xx).toFixed(1)}" y="${H-8}" fill="var(--faint)" font-size="9.5" text-anchor="${anchor}">${fmtTick(tt,span)}</text>`; }
   let pts=[],segs=[];
   s.forEach((p,i)=>{const gap=i>0&&ts[i]-ts[i-1]>1.5*stepMs;
     if(p.rsrp_median==null||gap){if(pts.length)segs.push(pts);pts=[];}
