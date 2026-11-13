@@ -20,8 +20,8 @@ commit to a SIM or a contract.
 
 ## Screenshots
 
-**Overview** — the live view: KPIs, interactive signal chart, quality mix and
-the realtime cards.
+**Overview** — the live view: KPIs, a signal chart on a real time axis (gaps
+stay visible), quality mix and the realtime cards.
 
 ![Overview dashboard](docs/dashboard-overview.jpg)
 
@@ -80,17 +80,19 @@ docs/         PHONE.md (phone setup walkthrough)
 ## The three pages
 
 - **Overview** (`/`) — the live view: four KPI cards (signal, usable time, data
-  reliability, speed), an interactive signal-over-time chart, a quality-mix
-  donut, the realtime signal/network/device cards and the remote controls.
+  reliability, data used), an interactive signal-over-time chart, a quality-mix
+  donut, the realtime signal/network/connectivity/device cards and the stress
+  test. The sensor stop/resume control sits in the top bar.
 - **Analysis** (`/stats`) — the verdict view: usage-profile recommendation,
   day-by-day and hour-of-day patterns, sensor uptime, conclusions, a dedicated
   4G/5G router upgrade estimate and a short glossary.
-- **Data** (`/explore`) — a sortable, filterable, paginated table of every
-  recent sample (time, operator, band, RSRP/RSRQ/SINR, HTTP, latency, battery)
-  with CSV export.
+- **Data** (`/explore`) — a sortable, filterable, paginated table of the
+  samples in the chosen window (24 h, 7 d, 30 d, all), with CSV export.
 
 Each page is a single self-contained HTML file (hand-rolled SVG charts, no chart
-libraries), bilingual **EN/IT** and with a light/dark theme toggle.
+libraries), bilingual **EN/IT** and with a light/dark theme toggle. All three
+use the same signal scale as the phone: RSRP ≥ -80 excellent, ≥ -90 good,
+≥ -100 fair, ≥ -110 poor, below that very poor.
 
 ## Run the collector (PC)
 
@@ -164,7 +166,8 @@ permissions), not in a public repo.
 From the dashboard (or `POST /control`), even from outside the house, you can:
 
 - **Stop / resume** the sensor: raises a flag the phone reads on its next cycle
-  and exits cleanly.
+  and exits cleanly. A stopped agent cannot be restarted remotely: clear the
+  flag with *Resume sensor*, then start `run_agent.sh` again in Termux.
 - Launch an **on-demand stress test** (multi-stream download + latency under
   load) with a data budget chosen at the time; the result comes back on the
   dashboard.
@@ -228,6 +231,15 @@ the `--budget-mb` cap is approximate to the downloaded-chunk granularity):
 ```bash
 python3 tools/stresstest.py --budget-mb 100 --phase 20
 ```
+
+## Tests
+
+```bash
+python3 -m unittest discover -s tests
+```
+
+The tests use synthetic data only: band decoding, signal classification and the
+collector's aggregation (malformed records, duplicate re-sends, event records).
 
 ## Extending it
 
