@@ -101,6 +101,9 @@
     .shell.nav-open .sidebar{transform:none;} .shell.nav-open .scrim{display:block;}
     .iconbtn{display:block;} .content{padding:14px 16px 36px;} h1{font-size:21px;}
   }
+  .side-prefs{display:flex;flex-direction:column;align-items:flex-start;gap:1px;margin-top:4px;padding:8px 0 0 16px;border-top:1px solid var(--line);}
+  .side-pref{font:inherit;font-size:12px;font-weight:600;color:var(--faint);background:none;border:0;padding:3px 0;cursor:pointer;transition:color .15s;}
+  .side-pref:hover{color:var(--ink);}
 </style>
 </head>
 <body>
@@ -116,6 +119,10 @@
     <div class="side-foot">
       <span class="side-status" id="statusPill"><span class="dot"></span><span id="statusText">offline</span></span>
       <span class="side-age" id="foot">—</span>
+      <div class="side-prefs">
+        <button class="side-pref" id="themeBtn" title="Theme" aria-label="Theme">dark</button>
+        <button class="side-pref" id="langBtn">IT</button>
+      </div>
     </div>
   </aside>
 
@@ -127,10 +134,6 @@
         <p class="sub" id="sub">loading…</p>
       </div>
       <div class="spacer"></div>
-      <div class="tb-actions">
-        <button class="tbtn" id="themeBtn" title="Theme" aria-label="Theme">dark</button>
-        <button class="tbtn" id="langBtn">IT</button>
-      </div>
     </header>
 
     <div class="data-range">

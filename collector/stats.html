@@ -156,6 +156,9 @@
   .glossary-card .gloss div{padding:0 8px;}
   .muted{color:var(--faint);}
   footer{margin-top:18px;text-align:center;font-size:11px;color:var(--faint);font-family:var(--mono);}
+  .side-prefs{display:flex;flex-direction:column;align-items:flex-start;gap:1px;margin-top:4px;padding:8px 0 0 16px;border-top:1px solid var(--line);}
+  .side-pref{font:inherit;font-size:12px;font-weight:600;color:var(--faint);background:none;border:0;padding:3px 0;cursor:pointer;transition:color .15s;}
+  .side-pref:hover{color:var(--ink);}
 </style>
 </head>
 <body>
@@ -171,6 +174,10 @@
     <div class="side-foot">
       <span class="side-status" id="statusPill"><span class="dot"></span><span id="statusText">offline</span></span>
       <span class="side-age" id="foot">—</span>
+      <div class="side-prefs">
+        <button class="side-pref" id="themeBtn" title="Theme" aria-label="Theme">dark</button>
+        <button class="side-pref" id="langBtn">IT</button>
+      </div>
     </div>
   </aside>
 
@@ -188,8 +195,6 @@
           <div class="profile-options" id="profileOptions" role="listbox" aria-label="Usage profile options"></div>
         </div>
         <span id="customWrap" style="display:none"><input type="number" id="customMbps" min="1" max="1000" value="10"> <span class="muted" id="t_target">target Mbps</span></span>
-        <button class="ghost" id="themeBtn" title="Theme" aria-label="Theme">dark</button>
-        <button class="ghost" id="langBtn">IT</button>
       </div>
     </header>
 
