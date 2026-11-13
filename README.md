@@ -1,5 +1,7 @@
 # Pocket-WiFi Monitor
 
+**English** · [Italiano](README.it.md)
+
 Turn a spare Android phone with a SIM into a **remote mobile-network quality
 sensor**. The phone reads signal, cell and connectivity with Termux:API, runs a
 small reachability check and ships the samples to a computer at home over
@@ -71,7 +73,7 @@ phone_agent.py  ──  HTTP over Tailscale  ─▶  data/ + web dashboard
 
 ```text
 agent/        runs on the phone (Termux): phone_agent.py, bands.py, start scripts
-collector/    runs on the PC: collector.py, dashboard.html, stats.html, start.sh, data/
+collector/    runs on the PC: collector.py, dashboard.html, stats.html, explore.html, start.sh, data/
 tools/        PC-side utilities: stresstest.py, adb_signal.py
 tests/        synthetic tests
 docs/         PHONE.md (phone setup walkthrough)
@@ -187,8 +189,8 @@ defence is the phone's own hardware thermal protection.
 
 ## Interpreting the numbers
 
-- **RSRP:** roughly `≥ -90 dBm` good, `-90/-100` fair, `-100/-110` poor, below
-  `-110` critical.
+- **RSRP:** `≥ -80 dBm` excellent, `≥ -90` good, `-90/-100` fair, `-100/-110`
+  poor, below `-110` very poor (the same scale the dashboard uses).
 - **SINR:** higher is cleaner/faster; near zero or negative can be slow even
   with an acceptable RSRP. (Many phones, including MIUI, don't report SINR.)
 - A sub-GHz band (e.g. B20 / 800 MHz) tends to reach further and through walls,
