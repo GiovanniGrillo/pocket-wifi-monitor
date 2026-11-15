@@ -90,7 +90,10 @@
 
   .pager{display:flex;align-items:center;gap:18px;flex-wrap:wrap;margin-top:16px;font-size:12px;color:var(--muted);}
   .pager .spacer{flex:1;}
-  .pager select{font:inherit;font-size:12px;color:var(--ink);background:var(--surface);border:1px solid var(--line);border-radius:7px;padding:5px 8px;}
+  .pager label{position:relative;display:inline-flex;align-items:center;gap:8px;}
+  .pager label::after{content:"";position:absolute;right:4px;top:9px;width:5px;height:5px;border-right:1px solid currentColor;border-bottom:1px solid currentColor;transform:rotate(45deg);pointer-events:none;}
+  .pager select{appearance:none;font:inherit;font-size:12px;font-weight:600;color:var(--muted);background:transparent;border:0;border-bottom:1px solid var(--line-strong);border-radius:0;padding:5px 18px 5px 0;cursor:pointer;transition:color .15s,border-color .15s;}
+  .pager select:hover,.pager select:focus{color:var(--ink);border-color:var(--ink);}
   .pager .nav button{font:inherit;font-size:15px;line-height:1;width:30px;height:30px;border-radius:7px;border:1px solid var(--line);background:var(--surface);color:var(--ink);cursor:pointer;}
   .pager .nav button:disabled{opacity:.4;cursor:default;}
   .pager .nav{display:inline-flex;gap:6px;}
@@ -160,7 +163,7 @@
       <span id="info">—</span>
       <span class="spacer"></span>
       <label><span id="t_perpage">rows</span>
-        <select id="perPage"><option>25</option><option selected>50</option><option>100</option><option>250</option></select>
+        <select id="perPage"><option>25</option><option selected>50</option><option>100</option><option>250</option><option>500</option><option>750</option></select>
       </label>
       <span class="nav"><button id="prev" aria-label="Previous">‹</button><button id="next" aria-label="Next">›</button></span>
     </div>
