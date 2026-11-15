@@ -82,7 +82,7 @@ docs/        guide
 
 ## Documentazione
 
-- [Configurazione del telefono](docs/PHONE.md): permessi, letture a schermo spento, avvio automatico
+- [Configurazione del telefono](docs/PHONE.md): permessi, letture a schermo spento, avvio automatico (in inglese)
 - [Uso](docs/USAGE.md): opzioni del collector, API, controllo remoto, sicurezza termica, strumenti (in inglese)
 - [Leggere i numeri](docs/METRICS.md): le tre pagine e la scala del segnale (in inglese)
 - [Sviluppo](docs/DEVELOPMENT.md): test e formato dei campioni (in inglese)

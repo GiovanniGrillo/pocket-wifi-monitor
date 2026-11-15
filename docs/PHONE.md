@@ -1,82 +1,84 @@
-# Guida telefono / Termux
+# Phone setup (Termux)
 
-Questa guida è il riferimento operativo per eseguire `phone_agent.py` su un
-telefono Android con SIM. Per il flusso completo e le decisioni di sicurezza
-vedi [README.md](../README.md).
+[Back to the README](../README.md)
 
-## Requisiti
+How to run `phone_agent.py` on an Android phone with a SIM. Menu names below
+are from MIUI/HyperOS (Xiaomi); other Android skins use similar ones.
 
-- Termux e Termux:API installati da F-Droid;
-- Tailscale installato e autenticato sullo stesso tailnet del PC;
-- Python e `termux-api` installati in Termux;
-- permessi Telefono e Posizione concessi a Termux:API;
-- telefono collegato all'alimentazione durante una raccolta lunga.
+## Requirements
 
-## Configurazione
+- Termux and Termux:API, both from F-Droid (same source, so they can talk to
+  each other).
+- Tailscale, signed in to the same tailnet as the PC.
+- Python and the `termux-api` package installed in Termux.
+- The Phone and Location permissions granted to the Termux:API app.
+- The phone on a charger for any long collection.
 
-Sul PC avvia prima il collector con un token casuale:
+## Setup
+
+Start the collector on the PC first, with a random token:
 
 ```bash
-export POCKET_WIFI_TOKEN='token-casuale'
+export POCKET_WIFI_TOKEN='random-token'
 cd collector && ./start.sh
 ```
 
-Sul telefono copia `phone_agent.py`, `bands.py` e `run_agent.sh` in
-`Download`, poi in Termux:
+Copy `phone_agent.py`, `bands.py` and `run_agent.sh` to the phone's `Download`
+folder, then in Termux:
 
 ```bash
 pkg update && pkg install python termux-api
 termux-setup-storage
 export POCKET_WIFI_COLLECTOR='http://100.x.y.z:8099'
-export POCKET_WIFI_TOKEN='token-casuale'
+export POCKET_WIFI_TOKEN='random-token'
 termux-wake-lock
 bash ~/storage/shared/Download/run_agent.sh
 ```
 
-Sostituisci `100.x.y.z` con l'IP mostrato da `tailscale ip -4` sul PC. Non
-committare mai questi valori e non inserire l'IP reale nello script.
+Replace `100.x.y.z` with the address `tailscale ip -4` prints on the PC. Never
+commit these values or write the real IP into the script.
 
-## Verifica
+## Check that it works
 
-Sul telefono dovresti vedere righe con banda, RSRP, codice HTTP e stato uplink.
-Sul PC apri `http://127.0.0.1:8099`; i dati vengono scritti in `data/`, che è
-locale e ignorata dal repository.
+Termux prints one line per sample with band, RSRP, HTTP code and uplink state.
+On the PC, open `http://127.0.0.1:8099`. Samples are written to
+`collector/data/`, which stays local and is ignored by git.
 
-Se il segnale è vuoto:
+If the signal fields are empty:
 
-1. verifica l'app Termux:API, non solo il pacchetto Python;
-2. ricontrolla permessi Telefono/Posizione;
-3. disabilita l'ottimizzazione batteria per Termux e Termux:API;
-4. prova `termux-telephony-cellinfo` manualmente;
-5. considera le differenze MIUI/Android: l'agente continua comunque a misurare
-   la connettività HTTP.
+1. Check the Termux:API app is installed, not only the Termux package.
+2. Check the Phone and Location permissions again.
+3. Turn off battery optimization for both Termux and Termux:API.
+4. Run `termux-telephony-cellinfo` by hand and see what it returns.
+5. Some MIUI/Android versions simply return less. The agent keeps measuring
+   HTTP connectivity either way.
 
-## Buchi di segnale a schermo spento
+## Signal gaps with the screen off
 
-Su MIUI/Android, con lo schermo spento e il telefono in sospensione profonda
-(*doze*), `termux-telephony-cellinfo` può restituire vuoto: il modem resta
-connesso e l'uplink HTTP continua a funzionare, ma il valore di RSRP/banda non
-viene fornito dal sistema in quel momento. Nel grafico "Signal over time" questi
-campioni appaiono come cerchietti vuoti sul fondo, non come dati persi: lo
-store-and-forward li ha inviati, manca solo il numero del segnale, e non è
-recuperabile a posteriori perché il sistema non l'ha mai prodotto.
+With the screen off and the phone in deep sleep (doze), MIUI/Android may return
+nothing from `termux-telephony-cellinfo`. The modem stays connected and the HTTP
+uplink keeps working, but the system does not report RSRP or the band at that
+moment. In the "Signal over time" chart these samples appear as empty circles at
+the bottom. They are not lost: the sample was delivered, only the signal number
+is missing, and it cannot be recovered later because the system never produced
+it.
 
-Per ridurre i buchi (soprattutto di notte):
+To reduce the gaps, especially at night:
 
-1. concedi a **Termux:API** la posizione come **"Consenti sempre"**, non "solo
-   mentre usi l'app": l'API della cella richiede la posizione in background;
-2. imposta la batteria su **nessuna restrizione** anche per **Termux:API**, non
-   solo per Termux;
-3. su alcune MIUI/HyperOS tieni attivo l'**autostart** per Termux:API;
-4. il wake-lock mantiene sveglia la CPU ma non sblocca da solo la posizione in
-   doze: serve il permesso "Consenti sempre" del punto 1.
+1. Give **Termux:API** location access **"Allow all the time"**, not "only while
+   using the app". The cell API needs background location.
+2. Set battery usage to **No restrictions** for **Termux:API** as well, not only
+   for Termux.
+3. On some MIUI/HyperOS versions, enable **Autostart** for Termux:API.
+4. The wake-lock keeps the CPU awake but does not unlock location in doze on its
+   own. The "Allow all the time" permission from step 1 is what matters.
 
-Non è garantito al 100% — in sospensione profonda Android può comunque limitare
-l'API — ma di norma recupera gran parte delle ore notturne.
+This is not guaranteed: in deep sleep Android can still throttle the API, but it
+usually recovers most of the night hours.
 
-## Avvio automatico
+## Start after a reboot
 
-Con Termux:Boot:
+With Termux:Boot installed and opened once:
 
 ```bash
 mkdir -p ~/.termux/boot
@@ -84,6 +86,13 @@ cp ~/storage/shared/Download/boot-start-agent.sh ~/.termux/boot/start-agent.sh
 chmod +x ~/.termux/boot/start-agent.sh
 ```
 
-Metti `POCKET_WIFI_COLLECTOR` e `POCKET_WIFI_TOKEN` in `~/.profile`, non in una
-repo pubblica. Il telefono deve essere acceso, avere rete mobile e Tailscale
-attivo; lo script aspetta alcuni secondi dopo il boot.
+Put `POCKET_WIFI_COLLECTOR` and `POCKET_WIFI_TOKEN` in `~/.profile` (never in a
+public repo). The boot script loads that file itself. The phone needs mobile
+data and Tailscale running; the script waits a few seconds after boot before it
+starts the agent.
+
+## After a remote stop
+
+A sensor stopped from the dashboard exits on the phone and cannot be restarted
+remotely. Press *Resume sensor* on the dashboard to clear the stop, then run
+`run_agent.sh` again in Termux.

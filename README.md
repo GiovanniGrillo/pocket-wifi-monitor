@@ -81,7 +81,7 @@ docs/        guides
 
 ## Documentation
 
-- [Phone setup](docs/PHONE.md): permissions, screen-off readings, auto-start (Italian)
+- [Phone setup](docs/PHONE.md): permissions, screen-off readings, auto-start
 - [Usage](docs/USAGE.md): collector options, API, remote control, thermal safety, tools
 - [Reading the numbers](docs/METRICS.md): the three pages and the signal scale
 - [Development](docs/DEVELOPMENT.md): tests and the sample format
