@@ -164,15 +164,19 @@ def run_phase(iface: str, streams: int, phase_s: int, chunk_mb: int,
 
 def verdict(peak_mbps: float, idle_lat: float | None, loaded_lat: float | None) -> list[str]:
     out = []
-    # Household scenario: 2 HD Netflix (~10 Mbps) + smart-home (~1-2 Mbps).
-    if peak_mbps >= 25:
-        out.append(f"Banda {peak_mbps:.0f} Mbps: regge 2 stream Netflix in 4K + domotica.")
-    elif peak_mbps >= 12:
-        out.append(f"Banda {peak_mbps:.0f} Mbps: ok 2 stream HD + domotica; 4K a fatica.")
-    elif peak_mbps >= 6:
-        out.append(f"Banda {peak_mbps:.0f} Mbps: giusta per 1 stream HD; 2 contemporanei rischiano.")
+    # Household scenario: Netflix asks 15 Mbps per 4K stream and 5 per Full HD
+    # stream (help.netflix.com/node/306), plus ~2 Mbps for smart-home devices.
+    mbps = round(peak_mbps)  # judge the same number the message shows
+    if mbps >= 32:
+        out.append(f"Banda {mbps} Mbps: regge 2 stream Netflix in 4K + domotica.")
+    elif mbps >= 17:
+        out.append(f"Banda {mbps} Mbps: 1 stream 4K oppure 2 HD + domotica.")
+    elif mbps >= 12:
+        out.append(f"Banda {mbps} Mbps: ok 2 stream HD + domotica; 4K no.")
+    elif mbps >= 7:
+        out.append(f"Banda {mbps} Mbps: giusta per 1 stream HD; 2 contemporanei rischiano.")
     else:
-        out.append(f"Banda {peak_mbps:.0f} Mbps: stretta per lo streaming multiplo.")
+        out.append(f"Banda {mbps} Mbps: stretta per lo streaming multiplo.")
     if idle_lat and loaded_lat:
         delta = loaded_lat - idle_lat
         if delta < 50:

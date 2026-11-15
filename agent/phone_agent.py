@@ -31,6 +31,7 @@ import subprocess
 import sys
 import threading
 import time
+import urllib.error
 import urllib.request
 from datetime import datetime, timezone
 from pathlib import Path
@@ -147,16 +148,33 @@ def read_signal() -> dict:
     return s
 
 
+class _NoRedirect(urllib.request.HTTPRedirectHandler):
+    """Report a redirect instead of following it: captive portals answer with one."""
+
+    def redirect_request(self, req, fp, code, msg, headers, newurl):
+        return None
+
+
+_PROBE = urllib.request.build_opener(_NoRedirect)
+
+
 def http_check(timeout_s: int = 8) -> dict:
     r: dict = {}
     t0 = time.monotonic()
     try:
         req = urllib.request.Request(LAT_URL, method="GET")
-        with urllib.request.urlopen(req, timeout=timeout_s) as resp:
+        with _PROBE.open(req, timeout=timeout_s) as resp:
             r["http_code"] = resp.status
             r["http_ms"] = round((time.monotonic() - t0) * 1000, 1)
-            r["http_ok"] = resp.status in (200, 204, 301, 302)
-    except Exception as e:  # noqa: BLE001 - any failure means link down
+            # Only the empty 204 proves real Internet access, as in Android's own
+            # check: a 200 or a 3xx usually comes from a captive portal.
+            r["http_ok"] = resp.status == 204
+    except urllib.error.HTTPError as e:  # redirects (not followed), 4xx and 5xx
+        r["http_code"] = e.code
+        r["http_ms"] = round((time.monotonic() - t0) * 1000, 1)
+        r["http_ok"] = False
+        r["http_error"] = f"HTTP {e.code}"
+    except Exception as e:  # noqa: BLE001 - any other failure means link down
         r["http_ok"] = False
         r["http_error"] = str(e)[:120]
     return r
